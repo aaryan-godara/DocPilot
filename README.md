@@ -23,7 +23,7 @@ Reading through long PDF documents to find specific information is time-consumin
 |-------|-------|
 | **Segment** | Foundations of Applied Machine Learning |
 | **Project Code** | I2 – Document Q&A (RAG) |
-| **Author** | [Aaryan Godara](https://github.com/aaryan-godara-1) |
+| **Author** | [Aaryan Godara](https://github.com/aaryan-godara) |
 
 ---
 
@@ -204,7 +204,7 @@ DocPilot/
 
 ```bash
 # Clone the repository
-git clone https://github.com/aaryan-godara-1/DocPilot.git
+git clone https://github.com/aaryan-godara/DocPilot.git
 cd DocPilot
 
 # Create virtual environment
