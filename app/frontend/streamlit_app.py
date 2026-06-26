@@ -1,5 +1,5 @@
 """
-AskMyBook — Streamlit Frontend
+DocPilot — Streamlit Frontend
 
 A clean web interface for uploading PDF documents and (in future weeks)
 asking questions about their content.
@@ -20,7 +20,7 @@ BACKEND_URL = "http://localhost:8000"
 # Page Configuration
 # ==================================================
 st.set_page_config(
-    page_title="AskMyBook",
+    page_title="DocPilot",
     page_icon="📚",
     layout="centered",
     initial_sidebar_state="expanded",
@@ -64,7 +64,7 @@ st.markdown(
 # ==================================================
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/000000/book.png", width=80)
-    st.title("📚 AskMyBook")
+    st.title("📚 DocPilot")
     st.markdown("---")
     st.markdown("### About")
     st.markdown(
@@ -96,7 +96,7 @@ with st.sidebar:
 # ==================================================
 # Main Content
 # ==================================================
-st.markdown('<p class="main-header">📚 AskMyBook</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">📚 DocPilot</p>', unsafe_allow_html=True)
 st.markdown(
     '<p class="sub-header">Upload a PDF and ask questions about its content</p>',
     unsafe_allow_html=True,

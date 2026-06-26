@@ -1,4 +1,4 @@
-# AskMyBook — Design Document
+# DocPilot — Design Document
 
 > **Version:** 1.0  
 > **Last Updated:** 2025-01-01  

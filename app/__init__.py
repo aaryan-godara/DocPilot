@@ -1,1 +1,1 @@
-# AskMyBook Application Package
+# DocPilot Application Package

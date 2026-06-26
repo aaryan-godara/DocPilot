@@ -1,5 +1,5 @@
 """
-AskMyBook — FastAPI Application Entry Point
+DocPilot — FastAPI Application Entry Point
 
 Creates and configures the FastAPI application with:
 - CORS middleware for frontend communication

@@ -1,5 +1,5 @@
 """
-AskMyBook — Health Endpoint Tests
+DocPilot — Health Endpoint Tests
 
 Smoke tests for the /health endpoint.
 Run with: pytest tests/ -v
@@ -42,7 +42,7 @@ class TestHealthEndpoint:
         """Health response should contain the service name."""
         response = client.get("/health")
         data = response.json()
-        assert data["service"] == "AskMyBook"
+        assert data["service"] == "DocPilot"
 
 
 class TestRootEndpoint:
@@ -58,7 +58,7 @@ class TestRootEndpoint:
         response = client.get("/")
         data = response.json()
         assert "message" in data
-        assert "AskMyBook" in data["message"]
+        assert "DocPilot" in data["message"]
 
 
 class TestUploadEndpoint:

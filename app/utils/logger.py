@@ -1,5 +1,5 @@
 """
-AskMyBook — Logging Configuration
+DocPilot — Logging Configuration
 
 Provides a consistent, configurable logger for the entire application.
 Log level is controlled via the LOG_LEVEL environment variable.

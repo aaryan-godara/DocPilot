@@ -1,5 +1,5 @@
 """
-AskMyBook — Application Configuration
+DocPilot — Application Configuration
 
 Centralized settings management using pydantic-settings.
 Reads from environment variables and .env file.
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     )
 
     # --- Application ---
-    app_name: str = "AskMyBook"
+    app_name: str = "DocPilot"
     app_version: str = "0.1.0"
     debug: bool = False
 

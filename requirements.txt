@@ -1,5 +1,5 @@
 # ==================================================
-# AskMyBook — Python Dependencies
+# DocPilot — Python Dependencies
 # ==================================================
 # Core dependencies for the RAG application.
 # Install: pip install -r requirements.txt

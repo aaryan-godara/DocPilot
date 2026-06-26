@@ -1,5 +1,5 @@
 """
-AskMyBook — Health Check Endpoint
+DocPilot — Health Check Endpoint
 
 Provides a simple health check for monitoring and uptime verification.
 """

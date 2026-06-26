@@ -1,4 +1,4 @@
-# AskMyBook — Architecture Document
+# DocPilot — Architecture Document
 
 > **Version:** 1.0  
 > **Last Updated:** 2025-01-01  
@@ -8,7 +8,7 @@
 
 ## Overview
 
-AskMyBook uses a **Retrieval-Augmented Generation (RAG)** architecture to answer questions about PDF documents. The system combines document retrieval with language model generation to produce accurate, citation-backed answers.
+DocPilot uses a **Retrieval-Augmented Generation (RAG)** architecture to answer questions about PDF documents. The system combines document retrieval with language model generation to produce accurate, citation-backed answers.
 
 This document describes each component in the pipeline, its responsibilities, and how data flows through the system.
 
@@ -249,7 +249,7 @@ The final output includes:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                     AskMyBook System                     │
+│                     DocPilot System                     │
 │                                                          │
 │  ┌──────────┐    ┌──────────────┐    ┌───────────────┐  │
 │  │ Streamlit │◄──►│   FastAPI    │◄──►│  ChromaDB     │  │

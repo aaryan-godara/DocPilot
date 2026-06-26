@@ -1,5 +1,5 @@
 """
-AskMyBook — PDF Upload Endpoint
+DocPilot — PDF Upload Endpoint
 
 Handles PDF file uploads:
 - Validates file extension (.pdf only)

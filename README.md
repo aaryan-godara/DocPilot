@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📚 AskMyBook
+# 📚 DocPilot
 
 **Ask questions about any PDF document and get answers with citations and page numbers.**
 
@@ -15,7 +15,7 @@
 
 ## 📋 Problem Statement
 
-Reading through long PDF documents to find specific information is time-consuming and inefficient. **AskMyBook** solves this by building a Retrieval-Augmented Generation (RAG) pipeline that lets users upload PDF documents, ask natural-language questions, and receive precise answers with **citations and page numbers** — grounded in the actual document content.
+Reading through long PDF documents to find specific information is time-consuming and inefficient. **DocPilot** solves this by building a Retrieval-Augmented Generation (RAG) pipeline that lets users upload PDF documents, ask natural-language questions, and receive precise answers with **citations and page numbers** — grounded in the actual document content.
 
 ## 🏷️ Project Info
 
@@ -89,7 +89,7 @@ flowchart TD
 ## 📁 Folder Structure
 
 ```
-AskMyBook/
+DocPilot/
 │
 ├── app/
 │   ├── frontend/              # Streamlit UI
@@ -204,8 +204,8 @@ AskMyBook/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/AskMyBook.git
-cd AskMyBook
+git clone https://github.com/your-username/DocPilot.git
+cd DocPilot
 
 # Create virtual environment
 python -m venv venv
