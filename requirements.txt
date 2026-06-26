@@ -1,0 +1,34 @@
+# ==================================================
+# AskMyBook — Python Dependencies
+# ==================================================
+# Core dependencies for the RAG application.
+# Install: pip install -r requirements.txt
+# ==================================================
+
+# --- Web Framework ---
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# --- Configuration ---
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# --- Frontend ---
+streamlit>=1.29.0
+requests>=2.31.0
+
+# --- PDF Processing (Week 2+) ---
+PyMuPDF>=1.23.0
+
+# --- LLM & Embeddings (Week 2+) ---
+langchain>=0.1.0
+openai>=1.6.0
+sentence-transformers>=2.2.0
+
+# --- Vector Database (Week 2+) ---
+chromadb>=0.4.0
+
+# --- Testing ---
+pytest>=7.4.0
+httpx>=0.25.0
