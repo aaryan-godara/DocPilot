@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.backend.config import get_settings
-from app.backend.routes import health, upload
+from app.backend.routes import health, process, upload
 from app.utils.logger import get_logger
 
 settings = get_settings()
@@ -52,6 +52,7 @@ app.add_middleware(
 # --- Register Routers ---
 app.include_router(health.router, tags=["Health"])
 app.include_router(upload.router, tags=["Upload"])
+app.include_router(process.router, tags=["Processing"])
 
 
 @app.get("/", include_in_schema=False)

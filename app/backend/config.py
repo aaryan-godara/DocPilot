@@ -42,9 +42,14 @@ class Settings(BaseSettings):
 
     # --- Paths ---
     upload_dir: str = "data/raw"
+    processed_dir: str = "data/processed"
 
     # --- Logging ---
     log_level: str = "INFO"
+
+    # --- Chunking (Week 2+) ---
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
 
     # --- OpenAI (Week 2+) ---
     openai_api_key: Optional[str] = None
@@ -56,6 +61,13 @@ class Settings(BaseSettings):
     def upload_path(self) -> Path:
         """Resolve the upload directory as an absolute path."""
         path = PROJECT_ROOT / self.upload_dir
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
+    def processed_path(self) -> Path:
+        """Resolve the processed data directory as an absolute path."""
+        path = PROJECT_ROOT / self.processed_dir
         path.mkdir(parents=True, exist_ok=True)
         return path
 
