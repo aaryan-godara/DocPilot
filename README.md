@@ -27,17 +27,17 @@ Reading through long PDF documents to find specific information is time-consumin
 
 ---
 
-## ✨ Features (Planned)
+## ✨ Features
 
 - [x] PDF document upload via web UI
 - [x] FastAPI backend with health monitoring
 - [x] Structured logging and configuration
 - [x] PDF parsing and text extraction
 - [x] Intelligent text chunking with overlap
-- [ ] Embedding generation using Sentence Transformers
-- [ ] Vector storage and retrieval with ChromaDB
-- [ ] LLM-powered answer generation with OpenAI
-- [ ] Citations with page numbers in responses
+- [x] Embedding generation using Sentence Transformers
+- [x] Vector storage and retrieval with ChromaDB
+- [x] LLM-powered answer generation with Grok (xAI)
+- [x] Citations with page numbers in responses
 - [ ] Multi-document support
 - [ ] Conversation history and follow-up questions
 - [ ] Dockerized deployment
@@ -82,7 +82,7 @@ Reading through long PDF documents to find specific information is time-consumin
                     └─────────────────┘
 ```
 
-> **Current scope (Week 1):** Only the PDF Upload → Backend storage path is implemented. The full RAG pipeline will be built in Weeks 2–4.
+> **Current scope (Week 3):** The full RAG pipeline is implemented — from PDF upload through to answer generation with citations. Week 4 will focus on polish and Docker deployment.
 
 ---
 
@@ -94,8 +94,8 @@ Reading through long PDF documents to find specific information is time-consumin
 | **Backend** | FastAPI | REST API server |
 | **Frontend** | Streamlit | Interactive web interface |
 | **PDF Processing** | PyMuPDF | Text extraction from PDFs |
-| **LLM Framework** | LangChain | RAG pipeline orchestration |
-| **LLM Provider** | OpenAI SDK | Answer generation |
+| **LLM Framework** | LangChain | Text chunking |
+| **LLM Provider** | Grok (xAI) via OpenAI SDK | Answer generation |
 | **Embeddings** | Sentence Transformers | Document & query embeddings |
 | **Vector Database** | ChromaDB | Similarity search & storage |
 | **Containerization** | Docker | Deployment & reproducibility |
@@ -114,24 +114,33 @@ DocPilot/
 │   ├── backend/               # FastAPI server
 │   │   ├── main.py            # App entry point
 │   │   ├── config.py          # Settings & env vars
-│   │   └── routes/
-│   │       ├── health.py      # Health check endpoint
-│   │       └── upload.py      # PDF upload endpoint
+│   │   ├── routes/
+│   │   │   ├── health.py      # GET /health
+│   │   │   ├── upload.py      # POST /upload
+│   │   │   ├── process.py     # POST /process/{filename}
+│   │   │   └── ask.py         # POST /ask
+│   │   └── services/
+│   │       ├── pdf_parser.py       # PyMuPDF text extraction
+│   │       ├── chunker.py          # LangChain text splitting
+│   │       ├── embedding_service.py # Sentence Transformers
+│   │       ├── vector_store.py     # ChromaDB wrapper
+│   │       ├── llm_client.py       # Grok/xAI LLM client
+│   │       └── rag_pipeline.py     # Orchestrates everything
 │   └── utils/
 │       └── logger.py          # Logging configuration
 │
 ├── data/
 │   ├── raw/                   # Uploaded PDFs
-│   ├── processed/             # Chunked & embedded data
+│   ├── processed/             # ChromaDB vector store
 │   └── sample/                # Sample documents for testing
 │
 ├── docs/
 │   ├── design_doc.md          # Design document
-│   ├── architecture.md        # Architecture deep-dive
+│   ├── progress_summary.md    # Complete progress log
 │   └── adr/                   # Architecture Decision Records
 │
+├── tests/                     # Unit & integration tests (50 tests)
 ├── notebooks/                 # Jupyter notebooks for experiments
-├── tests/                     # Unit & integration tests
 ├── scripts/                   # Utility scripts
 │
 ├── requirements.txt           # Python dependencies
@@ -151,7 +160,6 @@ DocPilot/
 | Project structure | ✅ Complete |
 | README & documentation | ✅ Complete |
 | Design document | ✅ Complete |
-| Architecture document | ✅ Complete |
 | FastAPI server | ✅ Complete |
 | Health endpoint | ✅ Complete |
 | Upload endpoint | ✅ Complete |
@@ -160,10 +168,13 @@ DocPilot/
 | PDF parsing | ✅ Complete |
 | Text chunking | ✅ Complete |
 | Process endpoint | ✅ Complete |
-| Embeddings | 🔲 Week 2 |
-| Vector database | 🔲 Week 3 |
-| RAG pipeline | 🔲 Week 3 |
-| Answer generation | 🔲 Week 4 |
+| Embeddings (Sentence Transformers) | ✅ Complete |
+| Vector database (ChromaDB) | ✅ Complete |
+| RAG pipeline | ✅ Complete |
+| LLM answer generation (Grok) | ✅ Complete |
+| `/ask` endpoint | ✅ Complete |
+| Q&A UI with citations | ✅ Complete |
+| Docker deployment | 🔲 Week 4 |
 
 ---
 
@@ -196,6 +207,20 @@ DocPilot/
 
 ---
 
+## 📅 Week 3 Progress
+
+- [x] Built `EmbeddingService` using Sentence Transformers (`all-MiniLM-L6-v2`, 384-dim)
+- [x] Built `VectorStoreService` using ChromaDB (persistent, cosine similarity, upsert)
+- [x] Built `LLMClient` for Grok/xAI via OpenAI SDK (citation-focused prompting)
+- [x] Built `RAGPipeline` orchestrator (ingestion + query flows)
+- [x] Added `POST /ask` endpoint for question answering
+- [x] Updated `/process` to run full ingestion pipeline (embed + store)
+- [x] Enabled Q&A in Streamlit UI with answer display, citation tags, and source chunks
+- [x] Updated configuration for xAI, embeddings, LLM, and retrieval settings
+- [x] Wrote 28 new tests (50 total) — all passing ✅
+
+---
+
 ## 📝 What I Learned
 
 - **Week 1:**
@@ -212,15 +237,23 @@ DocPilot/
   - **Dataclasses** (`PageContent`, `DocumentChunk`) make it much easier to pass structured data between services compared to raw dictionaries.
   - Writing tests *alongside* the code (not after) caught edge cases early — e.g., empty PDFs, single-chunk documents, and page boundary tracking.
 
+- **Week 3:**
+  - **The xAI API being OpenAI SDK-compatible** is a huge win — switching LLM providers is literally changing `base_url` and `api_key`.
+  - **Lazy initialization is critical for developer experience.** Without it, every `uvicorn --reload` would load the 80 MB embedding model. With it, the server starts in <1 second.
+  - **Prompt engineering matters more than model size** for citation quality. The system prompt explicitly instructs `[Page X]` format and "only answer from context."
+  - **ChromaDB's upsert** saves a lot of complexity — re-processing is idempotent, no duplicate detection needed.
+  - **Mocking the LLM in tests** is essential — pipeline tests shouldn't require an API key or hit a real endpoint.
+
 ---
 
 ## 🚀 Upcoming Milestones
 
-| Week | Milestone | Key Deliverables |
-|------|-----------|-----------------|
-| **Week 2** | PDF Processing Pipeline | Text extraction, chunking, embedding generation |
-| **Week 3** | RAG Core | Vector database integration, retriever, LLM integration |
-| **Week 4** | Polish & Deploy | Citations, UI improvements, Docker deployment, testing |
+| Week | Milestone | Key Deliverables | Status |
+|------|-----------|-----------------|---------|
+| **Week 1** | Project Setup | Repository, docs, FastAPI + Streamlit scaffold, upload | ✅ Done |
+| **Week 2** | PDF Processing | Text extraction, chunking, process endpoint | ✅ Done |
+| **Week 3** | RAG Pipeline | Embeddings, ChromaDB, Grok LLM, /ask endpoint, Q&A UI | ✅ Done |
+| **Week 4** | Polish & Deploy | Multi-doc, Docker deployment, final testing, demo | ⏳ Next |
 
 ---
 
@@ -251,8 +284,9 @@ venv\Scripts\activate      # Windows
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy environment variables
+# Copy environment variables and set your xAI API key
 cp .env.example .env
+# Edit .env and set XAI_API_KEY=xai-your-actual-key
 
 # Start the backend
 uvicorn app.backend.main:app --reload --port 8000
