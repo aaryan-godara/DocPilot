@@ -47,14 +47,24 @@ class Settings(BaseSettings):
     # --- Logging ---
     log_level: str = "INFO"
 
-    # --- Chunking (Week 2+) ---
+    # --- Chunking ---
     chunk_size: int = 1000
     chunk_overlap: int = 200
 
-    # --- OpenAI (Week 2+) ---
-    openai_api_key: Optional[str] = None
+    # --- Embeddings ---
+    embedding_model: str = "all-MiniLM-L6-v2"
 
-    # --- ChromaDB (Week 3+) ---
+    # --- xAI / Grok LLM ---
+    xai_api_key: Optional[str] = None
+    xai_base_url: str = "https://api.x.ai/v1"
+    llm_model: str = "grok-3-mini"
+    llm_temperature: float = 0.2
+    llm_max_tokens: int = 1000
+
+    # --- Retrieval ---
+    top_k: int = 5
+
+    # --- ChromaDB ---
     chroma_persist_dir: str = "data/processed/chroma"
 
     @property
@@ -68,6 +78,13 @@ class Settings(BaseSettings):
     def processed_path(self) -> Path:
         """Resolve the processed data directory as an absolute path."""
         path = PROJECT_ROOT / self.processed_dir
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
+    def chroma_path(self) -> Path:
+        """Resolve the ChromaDB directory as an absolute path."""
+        path = PROJECT_ROOT / self.chroma_persist_dir
         path.mkdir(parents=True, exist_ok=True)
         return path
 
