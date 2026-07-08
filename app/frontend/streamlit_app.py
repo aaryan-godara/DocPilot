@@ -1,8 +1,8 @@
 """
 DocPilot — Streamlit Frontend
 
-A clean web interface for uploading PDF documents and (in future weeks)
-asking questions about their content.
+A web interface for uploading PDF documents and asking questions
+about their content. Gets answers with citations and page numbers.
 
 Run with:
     streamlit run app/frontend/streamlit_app.py --server.port 8501
@@ -54,10 +54,26 @@ st.markdown(
     .stFileUploader > div {
         padding: 1rem;
     }
+    .citation-tag {
+        display: inline-block;
+        background-color: #e3f2fd;
+        border: 1px solid #90caf9;
+        border-radius: 4px;
+        padding: 2px 8px;
+        margin: 2px;
+        font-size: 0.85rem;
+        color: #1565c0;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+# ==================================================
+# Session State
+# ==================================================
+if "processed_files" not in st.session_state:
+    st.session_state.processed_files = []
 
 # ==================================================
 # Sidebar
@@ -87,9 +103,16 @@ with st.sidebar:
         st.warning("⚠️ Backend: Not connected")
         st.caption("Start the backend with:\n`uvicorn app.backend.main:app --reload`")
 
+    # Show processed documents
+    if st.session_state.processed_files:
+        st.markdown("---")
+        st.markdown("### 📂 Processed Documents")
+        for fname in st.session_state.processed_files:
+            st.caption(f"✅ {fname}")
+
     st.markdown("---")
     st.markdown(
-        "<small>Built with ❤️ using FastAPI + Streamlit</small>",
+        "<small>Built with ❤️ using FastAPI + Streamlit + Grok</small>",
         unsafe_allow_html=True,
     )
 
@@ -115,38 +138,139 @@ if uploaded_file is not None:
     # Display file info
     st.info(f"📎 **File:** {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
 
-    # Upload button
-    if st.button("⬆️ Upload to Server", type="primary", use_container_width=True):
+    # Upload & Process button
+    if st.button("⬆️ Upload & Process", type="primary", use_container_width=True):
+        # Step 1: Upload
         with st.spinner("Uploading..."):
             try:
                 files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
                 response = requests.post(f"{BACKEND_URL}/upload", files=files, timeout=30)
 
-                if response.status_code == 200:
-                    result = response.json()
-                    st.success(f"✅ **Uploaded successfully!**")
-                    st.markdown(f"- **Filename:** `{result['filename']}`")
-                    st.markdown(f"- **Size:** {int(result.get('size_bytes', 0)) / 1024:.1f} KB")
-                    st.markdown(f"- **Status:** {result['status']}")
-                else:
+                if response.status_code != 200:
                     error_detail = response.json().get("detail", "Unknown error")
                     st.error(f"❌ Upload failed: {error_detail}")
+                    st.stop()
+
+                result = response.json()
+                st.success(f"✅ **Uploaded:** `{result['filename']}`")
 
             except requests.ConnectionError:
                 st.error(
                     "❌ Could not connect to the backend. "
                     "Make sure the FastAPI server is running on port 8000."
                 )
+                st.stop()
+            except Exception as e:
+                st.error(f"❌ Upload error: {str(e)}")
+                st.stop()
+
+        # Step 2: Process (parse → chunk → embed → store)
+        with st.spinner("Processing PDF (parsing, chunking, embedding)... This may take a moment."):
+            try:
+                proc_response = requests.post(
+                    f"{BACKEND_URL}/process/{uploaded_file.name}",
+                    timeout=120,
+                )
+
+                if proc_response.status_code == 200:
+                    proc_data = proc_response.json()
+                    st.success(
+                        f"✅ **Processed!** "
+                        f"{proc_data['total_pages']} pages → "
+                        f"{proc_data['total_chunks']} chunks → "
+                        f"{proc_data['embeddings_stored']} embeddings "
+                        f"({proc_data['processing_time_seconds']:.1f}s)"
+                    )
+                    # Track processed files
+                    if uploaded_file.name not in st.session_state.processed_files:
+                        st.session_state.processed_files.append(uploaded_file.name)
+                else:
+                    error_detail = proc_response.json().get("detail", "Unknown error")
+                    st.error(f"❌ Processing failed: {error_detail}")
+
+            except requests.ConnectionError:
+                st.error("❌ Lost connection to backend during processing.")
+            except Exception as e:
+                st.error(f"❌ Processing error: {str(e)}")
+
+# --- Q&A Section ---
+st.markdown("---")
+st.markdown("### ❓ Ask a Question")
+
+question = st.text_input(
+    "Type your question here",
+    placeholder="What is this document about?",
+    help="Ask any question about the uploaded and processed documents.",
+)
+
+if question:
+    if st.button("🔍 Get Answer", type="primary", use_container_width=True):
+        with st.spinner("Thinking... (embedding → retrieving → generating)"):
+            try:
+                ask_response = requests.post(
+                    f"{BACKEND_URL}/ask",
+                    json={"question": question},
+                    timeout=60,
+                )
+
+                if ask_response.status_code == 200:
+                    data = ask_response.json()
+
+                    # Display the answer
+                    st.markdown("#### 💡 Answer")
+                    st.markdown(data["answer"])
+
+                    # Display citations
+                    if data.get("citations"):
+                        st.markdown("#### 📖 Citations")
+                        citation_html = ""
+                        seen_pages = set()
+                        for cite in data["citations"]:
+                            for page in cite["page_numbers"]:
+                                if page not in seen_pages:
+                                    seen_pages.add(page)
+                                    citation_html += (
+                                        f'<span class="citation-tag">'
+                                        f"Page {page} — {cite['source_file']}"
+                                        f"</span> "
+                                    )
+                        st.markdown(citation_html, unsafe_allow_html=True)
+
+                    # Display source chunks in expandable sections
+                    if data.get("source_chunks"):
+                        st.markdown("#### 📄 Source Chunks")
+                        for i, chunk in enumerate(data["source_chunks"], 1):
+                            pages_str = ", ".join(str(p) for p in chunk["page_numbers"])
+                            similarity = chunk["similarity_score"]
+                            with st.expander(
+                                f"Chunk {i} — Pages {pages_str} "
+                                f"(similarity: {similarity:.2%})"
+                            ):
+                                st.markdown(chunk["text_preview"])
+                                st.caption(
+                                    f"Source: {chunk['source_file']} | "
+                                    f"ID: {chunk['chunk_id']}"
+                                )
+
+                    # Metadata
+                    st.caption(
+                        f"Model: {data['model']} | "
+                        f"Tokens: {data['tokens_used']} | "
+                        f"Time: {data['processing_time_seconds']:.1f}s"
+                    )
+
+                elif ask_response.status_code == 400:
+                    error_detail = ask_response.json().get("detail", "Unknown error")
+                    st.warning(f"⚠️ {error_detail}")
+                else:
+                    error_detail = ask_response.json().get("detail", "Unknown error")
+                    st.error(f"❌ Error: {error_detail}")
+
+            except requests.ConnectionError:
+                st.error(
+                    "❌ Could not connect to the backend. "
+                    "Make sure the FastAPI server is running."
+                )
             except Exception as e:
                 st.error(f"❌ An error occurred: {str(e)}")
 
-# --- Q&A Section (Placeholder) ---
-st.markdown("---")
-st.markdown("### ❓ Ask a Question")
-st.text_input(
-    "Type your question here",
-    placeholder="What is this document about?",
-    disabled=True,
-    help="🔒 Q&A will be enabled in Week 3 when the RAG pipeline is complete.",
-)
-st.caption("🚧 *Question answering will be available after the RAG pipeline is implemented (Week 3).*")
