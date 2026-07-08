@@ -79,3 +79,8 @@ logs/
 # ==============================
 *.bak
 *.tmp
+
+# ==============================
+# Personal / Private Notes
+# ==============================
+docs/implementation_and_learning_guide.md
