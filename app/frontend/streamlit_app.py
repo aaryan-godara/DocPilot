@@ -38,45 +38,45 @@ st.markdown(
     /* ── Root Design Tokens ──────────────────────── */
     :root {
         /* Backgrounds */
-        --bg-primary: #09090f;
-        --bg-secondary: #111119;
-        --bg-elevated: #16161f;
+        --bg-primary: #f8fafc;
+        --bg-secondary: #f1f5f9;
+        --bg-elevated: #ffffff;
 
         /* Glass layers */
-        --glass-bg: rgba(255, 255, 255, 0.03);
-        --glass-bg-elevated: rgba(255, 255, 255, 0.055);
-        --glass-border: rgba(255, 255, 255, 0.07);
-        --glass-border-hover: rgba(108, 92, 231, 0.3);
-        --glass-hover: rgba(255, 255, 255, 0.06);
-        --glass-inner-glow: inset 0 1px 0 rgba(255,255,255,0.05);
+        --glass-bg: rgba(255, 255, 255, 0.75);
+        --glass-bg-elevated: rgba(255, 255, 255, 0.9);
+        --glass-border: rgba(203, 213, 225, 0.7);
+        --glass-border-hover: rgba(99, 102, 241, 0.5);
+        --glass-hover: rgba(255, 255, 255, 0.98);
+        --glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 1);
 
         /* Accent palette */
-        --accent-primary: #7c6cf0;
-        --accent-secondary: #a8a0ff;
-        --accent-tertiary: #74b9ff;
-        --accent-warm: #f0946c;
-        --accent-glow: rgba(124, 108, 240, 0.4);
-        --accent-gradient: linear-gradient(135deg, #7c6cf0 0%, #a8a0ff 50%, #74b9ff 100%);
-        --accent-gradient-warm: linear-gradient(135deg, #7c6cf0, #f0946c);
-        --neon-glow: 0 0 20px rgba(124, 108, 240, 0.15), 0 0 60px rgba(124, 108, 240, 0.05);
+        --accent-primary: #6366f1;
+        --accent-secondary: #4f46e5;
+        --accent-tertiary: #0ea5e9;
+        --accent-warm: #ea580c;
+        --accent-glow: rgba(99, 102, 241, 0.25);
+        --accent-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #0ea5e9 100%);
+        --accent-gradient-warm: linear-gradient(135deg, #6366f1, #ea580c);
+        --neon-glow: 0 0 20px rgba(99, 102, 241, 0.12), 0 0 40px rgba(99, 102, 241, 0.05);
 
-        /* Text */
-        --text-primary: #eeeef5;
-        --text-secondary: #9090ab;
-        --text-muted: #55556a;
+        /* Text - Ultra Readable Dark Slate/Navy */
+        --text-primary: #0f172a;
+        --text-secondary: #334155;
+        --text-muted: #64748b;
 
         /* Status */
-        --success: #34d399;
-        --success-bg: rgba(52, 211, 153, 0.08);
-        --success-border: rgba(52, 211, 153, 0.2);
-        --warning: #fbbf24;
-        --warning-bg: rgba(251, 191, 36, 0.08);
-        --warning-border: rgba(251, 191, 36, 0.2);
-        --error: #f87171;
-        --error-bg: rgba(248, 113, 113, 0.08);
-        --error-border: rgba(248, 113, 113, 0.2);
-        --info-bg: rgba(116, 185, 255, 0.06);
-        --info-border: rgba(116, 185, 255, 0.15);
+        --success: #10b981;
+        --success-bg: rgba(16, 185, 129, 0.08);
+        --success-border: rgba(16, 185, 129, 0.25);
+        --warning: #f59e0b;
+        --warning-bg: rgba(245, 158, 11, 0.08);
+        --warning-border: rgba(245, 158, 11, 0.25);
+        --error: #ef4444;
+        --error-bg: rgba(239, 68, 68, 0.08);
+        --error-border: rgba(239, 68, 68, 0.25);
+        --info-bg: rgba(14, 165, 233, 0.08);
+        --info-border: rgba(14, 165, 233, 0.25);
 
         /* Radii */
         --radius-xs: 8px;
@@ -108,20 +108,20 @@ st.markdown(
 
     /* Text selection */
     ::selection {
-        background: rgba(124, 108, 240, 0.3);
-        color: #fff;
+        background: rgba(99, 102, 241, 0.25);
+        color: #0f172a;
     }
 
-    /* ── Animated Background Mesh ────────────────── */
+    /* ── Animated Background Mesh (Light Pastel Orbs) ── */
     [data-testid="stApp"]::before {
         content: '';
         position: fixed;
         inset: 0;
         background:
-            radial-gradient(800px circle at 20% 30%, rgba(124, 108, 240, 0.07) 0%, transparent 60%),
-            radial-gradient(600px circle at 80% 15%, rgba(116, 185, 255, 0.05) 0%, transparent 50%),
-            radial-gradient(700px circle at 65% 75%, rgba(168, 160, 255, 0.04) 0%, transparent 55%),
-            radial-gradient(500px circle at 10% 85%, rgba(240, 148, 108, 0.03) 0%, transparent 45%);
+            radial-gradient(800px circle at 20% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
+            radial-gradient(600px circle at 80% 15%, rgba(14, 165, 233, 0.07) 0%, transparent 50%),
+            radial-gradient(700px circle at 65% 75%, rgba(139, 92, 246, 0.06) 0%, transparent 55%),
+            radial-gradient(500px circle at 10% 85%, rgba(249, 115, 22, 0.05) 0%, transparent 45%);
         pointer-events: none;
         z-index: 0;
         animation: meshFloat 25s ease-in-out infinite alternate;
@@ -133,8 +133,8 @@ st.markdown(
         position: fixed;
         inset: 0;
         background:
-            radial-gradient(400px circle at 50% 50%, rgba(124, 108, 240, 0.03) 0%, transparent 70%),
-            radial-gradient(300px circle at 30% 60%, rgba(116, 185, 255, 0.025) 0%, transparent 60%);
+            radial-gradient(400px circle at 50% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 70%),
+            radial-gradient(300px circle at 30% 60%, rgba(14, 165, 233, 0.035) 0%, transparent 60%);
         pointer-events: none;
         z-index: 0;
         animation: meshFloat2 30s ease-in-out infinite alternate-reverse;
@@ -145,7 +145,7 @@ st.markdown(
         content: '';
         position: fixed;
         inset: 0;
-        opacity: 0.015;
+        opacity: 0.01;
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
         background-repeat: repeat;
         pointer-events: none;
@@ -155,14 +155,14 @@ st.markdown(
     @keyframes meshFloat {
         0% {
             background-position: 0% 0%;
-            opacity: 0.8;
+            opacity: 0.85;
             transform: scale(1);
         }
         33% { opacity: 1; transform: scale(1.02); }
-        66% { opacity: 0.85; transform: scale(0.98); }
+        66% { opacity: 0.9; transform: scale(0.98); }
         100% {
             background-position: 100% 100%;
-            opacity: 0.9;
+            opacity: 0.95;
             transform: scale(1.01);
         }
     }
@@ -179,7 +179,7 @@ st.markdown(
     }
 
     header[data-testid="stHeader"] {
-        background: rgba(9, 9, 15, 0.7) !important;
+        background: rgba(248, 250, 252, 0.8) !important;
         backdrop-filter: blur(24px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
         border-bottom: 1px solid var(--glass-border) !important;
@@ -187,11 +187,11 @@ st.markdown(
 
     /* ── SIDEBAR — Frosted Glass ─────────────────── */
     [data-testid="stSidebar"] {
-        background: rgba(14, 14, 22, 0.92) !important;
+        background: rgba(241, 245, 249, 0.88) !important;
         backdrop-filter: blur(32px) saturate(150%) !important;
         -webkit-backdrop-filter: blur(32px) saturate(150%) !important;
         border-right: 1px solid var(--glass-border) !important;
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3) !important;
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.05) !important;
     }
 
     [data-testid="stSidebar"]::after {
@@ -201,7 +201,7 @@ st.markdown(
         right: 0;
         width: 1px;
         height: 100%;
-        background: linear-gradient(180deg, transparent 0%, rgba(124,108,240,0.15) 50%, transparent 100%);
+        background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.2) 50%, transparent 100%);
         pointer-events: none;
     }
 
@@ -226,14 +226,14 @@ st.markdown(
         border: 1px solid var(--glass-border) !important;
         border-radius: var(--radius-md) !important;
         padding: 1.5rem !important;
-        box-shadow: var(--glass-inner-glow), 0 4px 24px rgba(0,0,0,0.2) !important;
+        box-shadow: var(--glass-inner-glow), 0 4px 24px rgba(15, 23, 42, 0.05) !important;
         transition: var(--transition) !important;
     }
 
     .glass-card:hover {
         background: var(--glass-bg-elevated) !important;
         border-color: var(--glass-border-hover) !important;
-        box-shadow: var(--glass-inner-glow), var(--neon-glow), 0 8px 40px rgba(0,0,0,0.25) !important;
+        box-shadow: var(--glass-inner-glow), var(--neon-glow), 0 8px 32px rgba(15, 23, 42, 0.08) !important;
         transform: translateY(-2px) !important;
     }
 
@@ -246,10 +246,10 @@ st.markdown(
         background: var(--glass-bg-elevated) !important;
         backdrop-filter: blur(24px) saturate(160%) !important;
         -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
-        border: 1px solid rgba(255,255,255,0.09) !important;
+        border: 1px solid rgba(203, 213, 225, 0.8) !important;
         border-radius: var(--radius-md) !important;
         padding: 1.5rem !important;
-        box-shadow: var(--glass-inner-glow), 0 8px 32px rgba(0,0,0,0.3) !important;
+        box-shadow: var(--glass-inner-glow), 0 8px 32px rgba(15, 23, 42, 0.06) !important;
         transition: var(--transition) !important;
     }
 
@@ -1075,7 +1075,7 @@ st.markdown(
         font-family: 'Outfit', 'Inter', sans-serif;
         font-size: 1.4rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #7c6cf0, #a8a0ff);
+        background: linear-gradient(135deg, #4f46e5, #6366f1);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         position: relative;
@@ -1088,7 +1088,7 @@ st.markdown(
         left: -100%;
         width: 60%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
         animation: logoShimmer 4s ease-in-out infinite;
     }
 
