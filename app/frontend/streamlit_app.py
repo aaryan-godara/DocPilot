@@ -10,6 +10,7 @@ Run with:
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 # ==================================================
 # Configuration
@@ -24,6 +25,132 @@ st.set_page_config(
     page_icon="🚀",
     layout="centered",
     initial_sidebar_state="expanded",
+)
+
+# ==================================================
+# Interactive Constellation Network Canvas Background
+# ==================================================
+components.html(
+    """
+    <script>
+    const parentDoc = window.parent.document;
+    let canvas = parentDoc.getElementById('constellation-bg-canvas');
+    if (!canvas) {
+        canvas = parentDoc.createElement('canvas');
+        canvas.id = 'constellation-bg-canvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.zIndex = '1';
+        canvas.style.pointerEvents = 'none'; // let mouse clicks pass to Streamlit
+        parentDoc.body.prepend(canvas);
+
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = parentDoc.documentElement.clientWidth || window.parent.innerWidth;
+        let height = canvas.height = parentDoc.documentElement.clientHeight || window.parent.innerHeight;
+
+        window.parent.addEventListener('resize', () => {
+            width = canvas.width = parentDoc.documentElement.clientWidth || window.parent.innerWidth;
+            height = canvas.height = parentDoc.documentElement.clientHeight || window.parent.innerHeight;
+        });
+
+        // Mouse tracking across the entire parent window
+        let mouse = { x: -1000, y: -1000, active: false };
+        window.parent.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            mouse.active = true;
+        });
+        window.parent.addEventListener('mouseleave', () => {
+            mouse.active = false;
+        });
+
+        // Particle constellation network
+        const numParticles = Math.min(85, Math.floor((width * height) / 13000));
+        const particles = [];
+        for (let i = 0; i < numParticles; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.85,
+                vy: (Math.random() - 0.5) * 0.85,
+                radius: Math.random() * 2 + 1.8,
+                color: Math.random() > 0.35 ? 'rgba(99, 102, 241, 0.45)' : 'rgba(14, 165, 233, 0.45)'
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+
+                // Move
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Bounce at screen boundaries
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                // Mouse interaction — attract toward cursor when close
+                if (mouse.active) {
+                    let dx = mouse.x - p.x;
+                    let dy = mouse.y - p.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 180 && dist > 5) {
+                        p.vx += (dx / dist) * 0.045;
+                        p.vy += (dy / dist) * 0.045;
+
+                        // Draw connecting line directly to mouse cursor
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.strokeStyle = `rgba(99, 102, 241, ${(1 - dist / 180) * 0.38})`;
+                        ctx.lineWidth = 1.3;
+                        ctx.stroke();
+                    }
+                }
+
+                // Speed cap
+                let speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                if (speed > 2.3) {
+                    p.vx = (p.vx / speed) * 2.3;
+                    p.vy = (p.vy / speed) * 2.3;
+                }
+
+                // Draw point
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+
+                // Connect to other nearby points
+                for (let j = i + 1; j < particles.length; j++) {
+                    let p2 = particles[j];
+                    let dx2 = p.x - p2.x;
+                    let dy2 = p.y - p2.y;
+                    let dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                    if (dist2 < 140) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(99, 102, 241, ${(1 - dist2 / 140) * 0.24})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+    </script>
+    """,
+    height=0,
+    width=0,
 )
 
 # ==================================================
@@ -93,17 +220,48 @@ st.markdown(
         --transition-slow: all 0.5s var(--ease-out-expo);
     }
 
-    /* ── Global Resets ───────────────────────────── */
-    html, body, [data-testid="stAppViewContainer"],
-    [data-testid="stApp"] {
+    /* ── Global Resets & Transparent Canvas Base ── */
+    html, body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-        background: var(--bg-primary) !important;
+        background: #f8fafc !important;
         color: var(--text-primary) !important;
         scroll-behavior: smooth;
     }
 
-    [data-testid="stAppViewContainer"] {
-        background: var(--bg-primary) !important;
+    div#root, [data-testid="stAppViewContainer"],
+    [data-testid="stApp"], [data-testid="stMain"] {
+        background: transparent !important;
+        position: relative !important;
+        z-index: 2 !important;
+    }
+
+    /* Completely remove sidebar and top header so EVERYTHING lives inside the center glass box */
+    [data-testid="stSidebar"], [data-testid="stSidebarNav"],
+    [data-testid="collapsedControl"], header[data-testid="stHeader"] {
+        display: none !important;
+    }
+
+    /* ── CENTRAL GLASSMORPHISM BOX (Main Shell Container) ── */
+    [data-testid="stMainBlockContainer"] {
+        background: rgba(255, 255, 255, 0.78) !important;
+        backdrop-filter: blur(36px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(36px) saturate(180%) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+        border-radius: 32px !important;
+        box-shadow: 0 24px 64px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(99, 102, 241, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+        padding: 3.5rem 4rem 4rem !important;
+        margin: 3.5rem auto !important;
+        max-width: 820px !important;
+        position: relative !important;
+        z-index: 10 !important;
+    }
+
+    @media (max-width: 768px) {
+        [data-testid="stMainBlockContainer"] {
+            padding: 2rem 1.5rem 3rem !important;
+            margin: 1.5rem auto !important;
+            border-radius: 24px !important;
+        }
     }
 
     /* Text selection */
@@ -174,12 +332,8 @@ st.markdown(
     }
 
     /* ── Header ──────────────────────────────────── */
-    [data-testid="stMain"] {
-        background: transparent !important;
-    }
-
     header[data-testid="stHeader"] {
-        background: rgba(248, 250, 252, 0.8) !important;
+        background: rgba(248, 250, 252, 0.6) !important;
         backdrop-filter: blur(24px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
         border-bottom: 1px solid var(--glass-border) !important;
@@ -458,58 +612,60 @@ st.markdown(
         margin: 0;
     }
 
-    /* ── FILE UPLOADER — Premium Drag Zone ────────── */
+    /* ── FILE UPLOADER — Pristine Light Dropzone ─── */
     [data-testid="stFileUploader"] {
-        background: var(--glass-bg) !important;
-        border: 1.5px dashed rgba(124, 108, 240, 0.25) !important;
+        width: 100% !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    [data-testid="stFileUploadDropzone"] {
+        background: rgba(255, 255, 255, 0.88) !important;
+        border: 2px dashed rgba(99, 102, 241, 0.38) !important;
         border-radius: var(--radius-md) !important;
-        padding: 1.5rem !important;
+        padding: 2.5rem 1.5rem !important;
         transition: var(--transition) !important;
-        position: relative;
-        overflow: hidden;
+        box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.02) !important;
     }
 
-    [data-testid="stFileUploader"]::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, rgba(124,108,240,0.03), transparent, rgba(168,160,255,0.02));
-        opacity: 0;
-        transition: var(--transition);
-        pointer-events: none;
+    [data-testid="stFileUploadDropzone"] *,
+    [data-testid="stFileUploadDropzone"] div,
+    [data-testid="stFileUploadDropzone"] section,
+    [data-testid="stFileUploadDropzone"] span {
+        background-color: transparent !important;
     }
 
-    [data-testid="stFileUploader"]:hover {
-        border-color: rgba(124, 108, 240, 0.45) !important;
-        background: rgba(124, 108, 240, 0.03) !important;
-        box-shadow: 0 0 30px rgba(124,108,240,0.06), var(--glass-inner-glow) !important;
+    [data-testid="stFileUploadDropzone"]:hover {
+        background: rgba(255, 255, 255, 0.98) !important;
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.12), inset 0 2px 8px rgba(15, 23, 42, 0.01) !important;
+        transform: translateY(-2px);
     }
 
-    [data-testid="stFileUploader"]:hover::before {
-        opacity: 1;
+    [data-testid="stFileUploadDropzone"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stFileUploadDropzone"] label,
+    [data-testid="stFileUploadDropzone"] span {
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
     }
 
-    [data-testid="stFileUploader"] label {
-        color: var(--text-secondary) !important;
-        font-weight: 500 !important;
-    }
-
-    [data-testid="stFileUploader"] small {
+    [data-testid="stFileUploadDropzone"] small {
         color: var(--text-muted) !important;
     }
 
-    [data-testid="stFileUploader"] button {
+    [data-testid="stFileUploadDropzone"] button {
         background: var(--accent-gradient) !important;
         color: white !important;
         border: none !important;
         border-radius: var(--radius-xs) !important;
+        padding: 0.6rem 1.5rem !important;
         font-weight: 600 !important;
-        transition: var(--transition) !important;
-        box-shadow: 0 2px 10px rgba(124,108,240,0.2) !important;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25) !important;
     }
 
-    [data-testid="stFileUploader"] button:hover {
-        box-shadow: 0 4px 20px rgba(124,108,240,0.35) !important;
+    [data-testid="stFileUploadDropzone"] button:hover {
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
         transform: translateY(-1px) !important;
     }
 
@@ -526,7 +682,7 @@ st.markdown(
         font-size: 0.95rem !important;
         letter-spacing: 0.3px !important;
         transition: var(--transition) !important;
-        box-shadow: 0 4px 20px rgba(124, 108, 240, 0.25),
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25),
                     inset 0 1px 0 rgba(255,255,255,0.1) !important;
         position: relative !important;
         overflow: hidden !important;
@@ -549,8 +705,8 @@ st.markdown(
 
     [data-testid="stButton"] > button:hover {
         transform: translateY(-3px) scale(1.01) !important;
-        box-shadow: 0 8px 30px rgba(124, 108, 240, 0.4),
-                    0 2px 10px rgba(124, 108, 240, 0.2),
+        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4),
+                    0 2px 10px rgba(99, 102, 241, 0.2),
                     inset 0 1px 0 rgba(255,255,255,0.15) !important;
         background-position: 100% 50% !important;
     }
@@ -561,29 +717,40 @@ st.markdown(
 
     [data-testid="stButton"] > button:active {
         transform: translateY(0) scale(0.97) !important;
-        box-shadow: 0 2px 10px rgba(124, 108, 240, 0.2),
+        box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2),
                     inset 0 1px 0 rgba(255,255,255,0.05) !important;
         transition: var(--transition-fast) !important;
     }
 
     /* ── TEXT INPUT — Focus Brilliance ───────────── */
-    [data-testid="stTextInput"] input {
-        background: var(--glass-bg) !important;
-        border: 1.5px solid var(--glass-border) !important;
-        border-radius: var(--radius-sm) !important;
-        color: var(--text-primary) !important;
-        padding: 0.8rem 1.15rem !important;
-        font-size: 0.95rem !important;
-        transition: var(--transition) !important;
-        box-shadow: var(--glass-inner-glow) !important;
+    [data-testid="stTextInput"] {
+        width: 100% !important;
     }
 
-    [data-testid="stTextInput"] input:focus {
+    [data-testid="stTextInput"] div[data-baseweb="input"],
+    [data-testid="stTextInput"] div[data-baseweb="base-input"] {
+        background: rgba(255, 255, 255, 0.92) !important;
+        border: 1.5px solid rgba(203, 213, 225, 0.8) !important;
+        border-radius: var(--radius-sm) !important;
+        box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.03) !important;
+        transition: var(--transition) !important;
+        overflow: hidden !important;
+    }
+
+    [data-testid="stTextInput"] div[data-baseweb="input"]:focus-within,
+    [data-testid="stTextInput"] div[data-baseweb="base-input"]:focus-within {
         border-color: var(--accent-primary) !important;
-        box-shadow: 0 0 0 3px rgba(124, 108, 240, 0.12),
-                    0 0 20px rgba(124, 108, 240, 0.06),
-                    var(--glass-inner-glow) !important;
-        background: rgba(124, 108, 240, 0.02) !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), inset 0 1px 4px rgba(15, 23, 42, 0.02) !important;
+        background: #ffffff !important;
+    }
+
+    [data-testid="stTextInput"] input {
+        background: transparent !important;
+        border: none !important;
+        color: var(--text-primary) !important;
+        padding: 0.85rem 1.25rem !important;
+        font-size: 0.95rem !important;
+        box-shadow: none !important;
     }
 
     [data-testid="stTextInput"] input::placeholder {
@@ -698,19 +865,39 @@ st.markdown(
         box-shadow: 0 4px 16px rgba(124,108,240,0.12);
     }
 
-    /* ── ANSWER CARD — Reveal Animation ──────────── */
+    /* ── USER QUESTION CARD (For Cross-Questioning History) ── */
+    .user-question-card {
+        background: rgba(99, 102, 241, 0.08) !important;
+        border: 1.5px solid rgba(99, 102, 241, 0.25) !important;
+        border-radius: var(--radius-md) !important;
+        padding: 1.25rem 1.5rem !important;
+        margin: 1.75rem 0 0.75rem !important;
+        color: #0f172a !important;
+        font-weight: 600 !important;
+        font-size: 1.05rem !important;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.06) !important;
+    }
+
+    /* ── ANSWER CARD — Reveal Animation & Ultra Readable Text ── */
     .answer-card {
-        background: var(--glass-bg-elevated);
-        backdrop-filter: blur(20px) saturate(140%);
-        -webkit-backdrop-filter: blur(20px) saturate(140%);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--radius-md);
-        padding: 1.75rem;
-        margin: 1rem 0;
+        background: #ffffff !important;
+        backdrop-filter: blur(24px) saturate(160%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+        border: 1.5px solid rgba(203, 213, 225, 0.9) !important;
+        border-radius: var(--radius-md) !important;
+        padding: 2rem 2rem !important;
+        margin: 0.5rem 0 1.25rem !important;
         position: relative;
         overflow: hidden;
-        animation: answerReveal 0.6s var(--ease-out-expo) forwards;
-        box-shadow: var(--glass-inner-glow), 0 8px 32px rgba(0,0,0,0.2);
+        animation: answerReveal 0.5s var(--ease-out-expo) forwards;
+        box-shadow: 0 12px 36px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+        color: #0f172a !important;
+        font-size: 1.05rem !important;
+        font-weight: 500 !important;
+        line-height: 1.8 !important;
     }
 
     /* Animated gradient left border */
@@ -719,9 +906,9 @@ st.markdown(
         position: absolute;
         top: 0;
         left: 0;
-        width: 3px;
+        width: 4px;
         height: 100%;
-        background: linear-gradient(180deg, #7c6cf0, #a8a0ff, #74b9ff, #a8a0ff, #7c6cf0);
+        background: linear-gradient(180deg, #6366f1, #4f46e5, #0ea5e9, #4f46e5, #6366f1);
         background-size: 100% 300%;
         animation: borderShimmer 4s ease-in-out infinite;
     }
@@ -737,9 +924,25 @@ st.markdown(
         to { opacity: 1; transform: translateY(0); }
     }
 
-    .answer-card p, .answer-card li {
-        color: var(--text-primary);
-        line-height: 1.75;
+    /* Force all text inside answer card to be crisp, bold dark navy #0f172a */
+    .answer-card *, .answer-card p, .answer-card li, .answer-card span,
+    .answer-card div, .answer-card h1, .answer-card h2, .answer-card h3, .answer-card h4 {
+        color: #0f172a !important;
+        font-weight: 500 !important;
+        line-height: 1.8 !important;
+    }
+
+    .answer-card strong, .answer-card b {
+        color: #4f46e5 !important;
+        font-weight: 700 !important;
+    }
+
+    .answer-card code {
+        background: rgba(99, 102, 241, 0.12) !important;
+        color: #4f46e5 !important;
+        padding: 3px 8px !important;
+        border-radius: 6px !important;
+        font-size: 0.92rem !important;
     }
 
     /* ── STATS BAR — Dashboard Style ─────────────── */
@@ -1117,6 +1320,8 @@ st.markdown(
 # ==================================================
 if "processed_files" not in st.session_state:
     st.session_state.processed_files = []
+if "qa_history" not in st.session_state:
+    st.session_state.qa_history = []
 
 # ==================================================
 # Sidebar
@@ -1180,15 +1385,15 @@ with st.sidebar:
                 '</div>',
                 unsafe_allow_html=True,
             )
-    except requests.ConnectionError:
+    except (requests.ConnectionError, requests.Timeout, requests.RequestException, Exception):
         st.markdown(
             '<div class="status-pill offline">'
             '<span class="status-dot offline"></span>'
-            'Backend Offline'
+            'Backend Offline / Busy'
             '</div>',
             unsafe_allow_html=True,
         )
-        st.caption("Start with: `uvicorn app.backend.main:app --reload`")
+        st.caption("If timing out, backend is restarting or busy.")
 
     # Processed documents
     if st.session_state.processed_files:
@@ -1214,14 +1419,25 @@ with st.sidebar:
     )
 
 # ==================================================
-# Main Content — Hero Section
+# Main Content — Hero & Status Section
 # ==================================================
+status_badge_html = '<span style="background: rgba(16, 185, 129, 0.12); color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.25);">🟢 Backend Online</span>'
+try:
+    response = requests.get(f"{BACKEND_URL}/health", timeout=3)
+    if response.status_code != 200:
+        status_badge_html = '<span style="background: rgba(239, 68, 68, 0.12); color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid rgba(239, 68, 68, 0.25);">🔴 Backend Unhealthy</span>'
+except Exception:
+    status_badge_html = '<span style="background: rgba(245, 158, 11, 0.12); color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid rgba(245, 158, 11, 0.25);">🟡 Backend Connecting...</span>'
+
 st.markdown(
-    """
-    <div class="hero-container">
-        <div class="hero-badge">✨ Powered by Groq AI</div>
-        <h1 class="hero-title">DocPilot</h1>
-        <p class="hero-subtitle">
+    f"""
+    <div class="hero-container" style="text-align: center; margin-bottom: 2.5rem;">
+        <div style="display: flex; justify-content: center; gap: 10px; align-items: center; margin-bottom: 12px;">
+            <div class="hero-badge" style="margin: 0;">✨ Powered by Groq AI</div>
+            {status_badge_html}
+        </div>
+        <h1 class="hero-title" style="font-size: 3.5rem; margin-bottom: 8px;">DocPilot</h1>
+        <p class="hero-subtitle" style="max-width: 620px; margin: 0 auto; color: #475569; font-size: 1.05rem; line-height: 1.6;">
             Upload your PDF documents and get precise, cited answers
             powered by AI. Every fact traced back to its source page.
         </p>
@@ -1386,87 +1602,15 @@ if question:
 
                 if ask_response.status_code == 200:
                     data = ask_response.json()
-
-                    # Answer card
-                    st.markdown(
-                        """
-                        <div class="section-header" style="margin-top:1.5rem;">
-                            <div class="section-icon answer">💡</div>
-                            <div>
-                                <p class="section-title">Answer</p>
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
-                    st.markdown(
-                        f'<div class="answer-card">{data["answer"]}</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                    # Citations
-                    if data.get("citations"):
-                        st.markdown(
-                            '<p style="font-size:0.8rem; color:#64748b; '
-                            'text-transform:uppercase; letter-spacing:0.8px; '
-                            'font-weight:600; margin:1rem 0 0.5rem;">📖 Sources</p>',
-                            unsafe_allow_html=True,
-                        )
-                        citation_html = ""
-                        seen_pages = set()
-                        for cite in data["citations"]:
-                            for page in cite["page_numbers"]:
-                                if page not in seen_pages:
-                                    seen_pages.add(page)
-                                    citation_html += (
-                                        f'<span class="citation-tag">'
-                                        f'📄 Page {page} — {cite["source_file"]}'
-                                        f'</span>'
-                                    )
-                        st.markdown(citation_html, unsafe_allow_html=True)
-
-                    # Source chunks
-                    if data.get("source_chunks"):
-                        st.markdown(
-                            '<p style="font-size:0.8rem; color:#64748b; '
-                            'text-transform:uppercase; letter-spacing:0.8px; '
-                            'font-weight:600; margin:1.5rem 0 0.5rem;">📑 Source Chunks</p>',
-                            unsafe_allow_html=True,
-                        )
-                        for i, chunk in enumerate(data["source_chunks"], 1):
-                            pages_str = ", ".join(
-                                str(p) for p in chunk["page_numbers"]
-                            )
-                            similarity = chunk["similarity_score"]
-                            with st.expander(
-                                f"Chunk {i}  ·  Pages {pages_str}  ·  "
-                                f"Match: {similarity:.0%}"
-                            ):
-                                st.markdown(chunk["text_preview"])
-                                st.caption(
-                                    f"Source: {chunk['source_file']}  |  "
-                                    f"ID: {chunk['chunk_id']}"
-                                )
-
-                    # Stats bar
-                    st.markdown(
-                        f"""
-                        <div class="stats-bar">
-                            <div class="stat-item">
-                                🤖 <span class="stat-value">{data['model']}</span>
-                            </div>
-                            <div class="stat-item">
-                                🔤 <span class="stat-value">{data['tokens_used']}</span> tokens
-                            </div>
-                            <div class="stat-item">
-                                ⚡ <span class="stat-value">{data['processing_time_seconds']:.1f}s</span>
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
+                    st.session_state.qa_history.insert(0, {
+                        "question": question,
+                        "answer": data["answer"],
+                        "citations": data.get("citations", []),
+                        "source_chunks": data.get("source_chunks", []),
+                        "model": data.get("model", "llama-3.3-70b-versatile"),
+                        "tokens_used": data.get("tokens_used", 0),
+                        "processing_time_seconds": data.get("processing_time_seconds", 0.0),
+                    })
                 elif ask_response.status_code == 400:
                     error_detail = ask_response.json().get(
                         "detail", "Unknown error"
@@ -1478,10 +1622,117 @@ if question:
                     )
                     st.error(f"❌ Error: {error_detail}")
 
-            except requests.ConnectionError:
-                st.error(
-                    "❌ Could not connect to the backend. "
-                    "Make sure the FastAPI server is running."
+            except (requests.ConnectionError, requests.Timeout, requests.RequestException, Exception) as e:
+                st.error(f"❌ Could not connect or error occurred: {str(e)}")
+
+# ==================================================
+# Q&A History Display (Cross-Questioning Loop)
+# ==================================================
+if st.session_state.qa_history:
+    st.markdown("---")
+    col_hist_title, col_clear = st.columns([3, 1])
+    with col_hist_title:
+        st.markdown(
+            '<p style="font-size:0.9rem; color:#4f46e5; text-transform:uppercase; '
+            'letter-spacing:1px; font-weight:700; margin: 8px 0 0;">💬 Conversation & Cross-Questioning History</p>',
+            unsafe_allow_html=True,
+        )
+    with col_clear:
+        if st.button("🗑️ Clear History", use_container_width=True):
+            st.session_state.qa_history = []
+            st.rerun()
+
+    for idx, item in enumerate(st.session_state.qa_history, 1):
+        # User Question Banner
+        st.markdown(
+            f"""
+            <div class="user-question-card">
+                <span style="font-size:1.3rem;">👤</span>
+                <div>
+                    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.8px;">You Asked (Q#{len(st.session_state.qa_history) - idx + 1})</div>
+                    <div style="color:#0f172a; font-weight:600; font-size:1.08rem;">{item['question']}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # Answer card
+        st.markdown(
+            """
+            <div class="section-header" style="margin-top:0.75rem;">
+                <div class="section-icon answer">💡</div>
+                <div>
+                    <p class="section-title">DocPilot Answer</p>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f'<div class="answer-card">{item["answer"]}</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Citations
+        if item.get("citations"):
+            st.markdown(
+                '<p style="font-size:0.8rem; color:#64748b; '
+                'text-transform:uppercase; letter-spacing:0.8px; '
+                'font-weight:600; margin:1rem 0 0.5rem;">📖 Sources</p>',
+                unsafe_allow_html=True,
+            )
+            citation_html = ""
+            seen_pages = set()
+            for cite in item["citations"]:
+                for page in cite["page_numbers"]:
+                    if page not in seen_pages:
+                        seen_pages.add(page)
+                        citation_html += (
+                            f'<span class="citation-tag">'
+                            f'📄 Page {page} — {cite["source_file"]}'
+                            f'</span>'
+                        )
+            st.markdown(citation_html, unsafe_allow_html=True)
+
+        # Source chunks inside Expander
+        if item.get("source_chunks"):
+            st.markdown(
+                '<p style="font-size:0.8rem; color:#64748b; '
+                'text-transform:uppercase; letter-spacing:0.8px; '
+                'font-weight:600; margin:1.25rem 0 0.5rem;">📑 Source Chunks</p>',
+                unsafe_allow_html=True,
+            )
+            for i, chunk in enumerate(item["source_chunks"], 1):
+                pages_str = ", ".join(
+                    str(p) for p in chunk["page_numbers"]
                 )
-            except Exception as e:
-                st.error(f"❌ An error occurred: {str(e)}")
+                similarity = chunk["similarity_score"]
+                with st.expander(
+                    f"Chunk {i}  ·  Pages {pages_str}  ·  "
+                    f"Match: {similarity:.0%}"
+                ):
+                    st.markdown(f'<div style="color:#0f172a; line-height:1.7;">{chunk["text_preview"]}</div>', unsafe_allow_html=True)
+                    st.caption(
+                        f"Source: {chunk['source_file']}  |  "
+                        f"ID: {chunk['chunk_id']}"
+                    )
+
+        # Stats bar
+        st.markdown(
+            f"""
+            <div class="stats-bar" style="margin-bottom: 2rem;">
+                <div class="stat-item">
+                    🤖 <span class="stat-value">{item['model']}</span>
+                </div>
+                <div class="stat-item">
+                    🔤 <span class="stat-value">{item['tokens_used']}</span> tokens
+                </div>
+                <div class="stat-item">
+                    ⚡ <span class="stat-value">{item['processing_time_seconds']:.1f}s</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
