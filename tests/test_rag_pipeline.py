@@ -136,7 +136,7 @@ class TestRAGPipelineQuery:
             citations=[
                 Citation(page_numbers=[1], source_file="test_document.pdf", chunk_id="test_chunk_0001")
             ],
-            model="grok-3-mini",
+            model="llama-3.3-70b-versatile",
             tokens_used=42,
             latency_seconds=0.5,
         )
@@ -178,7 +178,7 @@ class TestRAGPipelineQuery:
         assert response.answer is not None
         assert len(response.answer) > 0
         assert "machine learning" in response.answer.lower()
-        assert response.model == "grok-3-mini"
+        assert response.model == "llama-3.3-70b-versatile"
         assert response.tokens_used == 42
         assert response.processing_time_seconds > 0
         assert len(response.source_chunks) > 0

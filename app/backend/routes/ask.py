@@ -3,7 +3,7 @@ DocPilot — Ask Endpoint
 
 Handles question-answering requests using the RAG pipeline.
 Embeds the question, retrieves relevant chunks, and generates
-an answer with citations via Grok.
+an answer with citations via Groq.
 """
 
 from fastapi import APIRouter, HTTPException
@@ -83,7 +83,7 @@ async def ask_question(request: AskRequest) -> AskResponse:
     Ask a question about uploaded documents.
 
     The endpoint embeds the question, retrieves relevant chunks from
-    the vector store, and generates an answer with citations using Grok.
+    the vector store, and generates an answer with citations using Groq.
 
     Args:
         request: AskRequest with question and optional filename filter.

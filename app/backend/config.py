@@ -54,10 +54,10 @@ class Settings(BaseSettings):
     # --- Embeddings ---
     embedding_model: str = "all-MiniLM-L6-v2"
 
-    # --- xAI / Grok LLM ---
-    xai_api_key: Optional[str] = None
-    xai_base_url: str = "https://api.x.ai/v1"
-    llm_model: str = "grok-3-mini"
+    # --- Groq LLM ---
+    groq_api_key: Optional[str] = None
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "llama-3.3-70b-versatile"
     llm_temperature: float = 0.2
     llm_max_tokens: int = 1000
 

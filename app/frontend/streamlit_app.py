@@ -1126,12 +1126,12 @@ with st.sidebar:
         """
         <div style="text-align:center; padding: 1rem 0 0.5rem;">
             <div style="font-size: 2.4rem; margin-bottom: 6px;
-                 filter: drop-shadow(0 0 8px rgba(124,108,240,0.3));">🚀</div>
+                 filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.25));">🚀</div>
             <div class="sidebar-logo">
                 <span class="sidebar-logo-text">DocPilot</span>
             </div>
-            <div style="font-size: 0.68rem; color: #55556a; letter-spacing: 1.5px;
-                 text-transform: uppercase; margin-top: 4px; font-weight: 500;">
+            <div style="font-size: 0.68rem; color: #64748b; letter-spacing: 1.5px;
+                 text-transform: uppercase; margin-top: 4px; font-weight: 600;">
                 AI Document Assistant
             </div>
         </div>
@@ -1143,10 +1143,10 @@ with st.sidebar:
 
     st.markdown(
         """
-        <div style="font-size: 0.85rem; color: #9090ab; line-height: 1.7;">
+        <div style="font-size: 0.85rem; color: #334155; line-height: 1.7;">
             Upload PDF documents and ask questions.
-            Get answers with <strong style="color:#a8a0ff;">citations</strong>
-            and <strong style="color:#a8a0ff;">page numbers</strong>.
+            Get answers with <strong style="color:#4f46e5;">citations</strong>
+            and <strong style="color:#4f46e5;">page numbers</strong>.
         </div>
         """,
         unsafe_allow_html=True,
@@ -1156,7 +1156,7 @@ with st.sidebar:
 
     # Backend health check
     st.markdown(
-        '<p style="font-size:0.75rem; color:#55556a; text-transform:uppercase; '
+        '<p style="font-size:0.75rem; color:#64748b; text-transform:uppercase; '
         'letter-spacing:1px; margin-bottom:8px; font-weight:600;">System Status</p>',
         unsafe_allow_html=True,
     )
@@ -1194,7 +1194,7 @@ with st.sidebar:
     if st.session_state.processed_files:
         st.markdown("---")
         st.markdown(
-            '<p style="font-size:0.75rem; color:#55556a; text-transform:uppercase; '
+            '<p style="font-size:0.75rem; color:#64748b; text-transform:uppercase; '
             'letter-spacing:1px; margin-bottom:8px; font-weight:600;">Indexed Documents</p>',
             unsafe_allow_html=True,
         )
@@ -1408,7 +1408,7 @@ if question:
                     # Citations
                     if data.get("citations"):
                         st.markdown(
-                            '<p style="font-size:0.8rem; color:#55556a; '
+                            '<p style="font-size:0.8rem; color:#64748b; '
                             'text-transform:uppercase; letter-spacing:0.8px; '
                             'font-weight:600; margin:1rem 0 0.5rem;">📖 Sources</p>',
                             unsafe_allow_html=True,
@@ -1429,7 +1429,7 @@ if question:
                     # Source chunks
                     if data.get("source_chunks"):
                         st.markdown(
-                            '<p style="font-size:0.8rem; color:#55556a; '
+                            '<p style="font-size:0.8rem; color:#64748b; '
                             'text-transform:uppercase; letter-spacing:0.8px; '
                             'font-weight:600; margin:1.5rem 0 0.5rem;">📑 Source Chunks</p>',
                             unsafe_allow_html=True,

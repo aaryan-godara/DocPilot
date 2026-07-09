@@ -1,9 +1,9 @@
 """
-DocPilot — LLM Client Service (Grok / xAI)
+DocPilot — LLM Client Service (Groq)
 
-Sends prompts to the Grok LLM via the xAI API. The xAI API is
+Sends prompts to the LLM via the Groq API. The Groq API is
 OpenAI SDK-compatible, so we use the `openai` Python package with
-base_url set to https://api.x.ai/v1.
+base_url set to https://api.groq.com/openai/v1.
 """
 
 import time
@@ -67,15 +67,15 @@ class LLMResponse:
 # ── LLM Client ──────────────────────────────────────────────────────
 class LLMClient:
     """
-    Send prompts to Grok via the xAI API and parse responses.
+    Send prompts to the LLM via the Groq API and parse responses.
 
-    Uses the OpenAI Python SDK with base_url pointed at xAI's endpoint.
+    Uses the OpenAI Python SDK with base_url pointed at Groq's endpoint.
     The prompt includes retrieved context chunks with page metadata so
     the model can generate cited answers.
 
     Args:
-        api_key: xAI API key (defaults to settings.xai_api_key).
-        base_url: xAI API base URL (defaults to settings.xai_base_url).
+        api_key: Groq API key (defaults to settings.groq_api_key).
+        base_url: Groq API base URL (defaults to settings.groq_base_url).
         model: Model name (defaults to settings.llm_model).
 
     Example:
@@ -90,14 +90,14 @@ class LLMClient:
         base_url: str | None = None,
         model: str | None = None,
     ) -> None:
-        self.api_key = api_key or settings.xai_api_key
-        self.base_url = base_url or settings.xai_base_url
+        self.api_key = api_key or settings.groq_api_key
+        self.base_url = base_url or settings.groq_base_url
         self.model = model or settings.llm_model
 
         if not self.api_key:
             raise ValueError(
-                "xAI API key is required. Set XAI_API_KEY in your .env file. "
-                "Get a key at https://console.x.ai"
+                "Groq API key is required. Set GROQ_API_KEY in your .env file. "
+                "Get a key at https://console.groq.com/keys"
             )
 
         self._client = OpenAI(
@@ -121,7 +121,7 @@ class LLMClient:
         """
         Generate an answer to a question using retrieved context chunks.
 
-        Builds a prompt with the context and question, sends it to Grok,
+        Builds a prompt with the context and question, sends it to the LLM,
         and returns a structured response with citations extracted from
         the source chunks.
 
