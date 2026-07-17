@@ -1,0 +1,54 @@
+# ==================================================
+# DocPilot — .dockerignore
+# Files excluded from the Docker build context
+# (speeds up builds and keeps images lean)
+# ==================================================
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env_venv/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# Data (mounted as a volume at runtime — not baked into the image)
+data/raw/
+data/processed/
+
+# Notebooks (not needed at runtime)
+notebooks/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (not needed in the image)
+docs/
+
+# Secrets — never bake into image
+.env

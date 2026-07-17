@@ -1,11 +1,18 @@
 # ==================================================
-# DocPilot — Docker Compose (Placeholder)
+# DocPilot — Docker Compose
+#
+# Usage:
+#   docker compose up --build          # Build and start both services
+#   docker compose up -d               # Start in background
+#   docker compose down                # Stop and remove containers
+#   docker compose logs -f             # Follow logs from all services
+#
+# Services:
+#   backend   — FastAPI on http://localhost:8000
+#   frontend  — Streamlit on http://localhost:8501
+#
+# Data is persisted in ./data (ChromaDB + uploaded PDFs survive restarts)
 # ==================================================
-# This file will be fully configured in Week 3.
-# For now it defines the service structure.
-# ==================================================
-
-version: "3.9"
 
 services:
   # ------------------------------------------------
@@ -14,16 +21,21 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile  # TODO: Create Dockerfile
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
+      # Mount ./data so ChromaDB and uploads persist across container restarts
       - ./data:/app/data
-    # command: uvicorn app.backend.main:app --host 0.0.0.0 --port 8000
-    # depends_on:
-    #   - chromadb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # ------------------------------------------------
   # Streamlit Frontend
@@ -31,22 +43,15 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend  # TODO: Create Dockerfile.frontend
+      dockerfile: Dockerfile.frontend
     ports:
       - "8501:8501"
     env_file:
       - .env
-    # command: streamlit run app/frontend/streamlit_app.py --server.port 8501
-
-  # ------------------------------------------------
-  # ChromaDB (Week 2+)
-  # ------------------------------------------------
-  # chromadb:
-  #   image: chromadb/chroma:latest
-  #   ports:
-  #     - "8001:8000"
-  #   volumes:
-  #     - chroma_data:/chroma/chroma
-
-# volumes:
-#   chroma_data:
+    environment:
+      # Override BACKEND_URL to use Docker's internal network (service name = hostname)
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
