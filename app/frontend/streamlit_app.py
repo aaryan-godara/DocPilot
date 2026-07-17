@@ -8,14 +8,16 @@ Run with:
     streamlit run app/frontend/streamlit_app.py --server.port 8501
 """
 
+import os
+
 import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
 # ==================================================
-# Configuration
+# Configuration — reads BACKEND_URL from env for Docker compatibility
 # ==================================================
-BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 
 # ==================================================
 # Page Configuration
@@ -1583,6 +1585,22 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# ── Document selector (multi-doc support) ────────────────────────────
+if st.session_state.processed_files:
+    doc_options = ["📚 All Documents"] + st.session_state.processed_files
+    selected_doc_label = st.selectbox(
+        "Search in",
+        options=doc_options,
+        help="Select a specific document to query, or search across all indexed documents.",
+        label_visibility="visible",
+    )
+    # None means search all; otherwise extract the filename
+    selected_filename: str | None = (
+        None if selected_doc_label == "📚 All Documents" else selected_doc_label
+    )
+else:
+    selected_filename = None
+
 question = st.text_input(
     "Your question",
     placeholder="e.g. What are the key findings in this document?",
@@ -1594,9 +1612,21 @@ if question:
     if st.button("🔍 Get Answer", type="primary", use_container_width=True):
         with st.spinner("🧠 Thinking — embedding → retrieving → generating..."):
             try:
+                # Build conversation history from session state (newest first, already ordered)
+                history_payload = [
+                    {"question": h["question"], "answer": h["answer"]}
+                    for h in st.session_state.qa_history
+                ]
+
+                ask_payload: dict = {
+                    "question": question,
+                    "filename": selected_filename,
+                    "conversation_history": history_payload if history_payload else None,
+                }
+
                 ask_response = requests.post(
                     f"{BACKEND_URL}/ask",
-                    json={"question": question},
+                    json=ask_payload,
                     timeout=60,
                 )
 
@@ -1607,9 +1637,10 @@ if question:
                         "answer": data["answer"],
                         "citations": data.get("citations", []),
                         "source_chunks": data.get("source_chunks", []),
-                        "model": data.get("model", "llama-3.3-70b-versatile"),
+                        "model": data.get("model", "grok-3-mini"),
                         "tokens_used": data.get("tokens_used", 0),
                         "processing_time_seconds": data.get("processing_time_seconds", 0.0),
+                        "searched_doc": selected_filename or "All Documents",
                     })
                 elif ask_response.status_code == 400:
                     error_detail = ask_response.json().get(
@@ -1644,12 +1675,20 @@ if st.session_state.qa_history:
 
     for idx, item in enumerate(st.session_state.qa_history, 1):
         # User Question Banner
+        searched_doc = item.get("searched_doc", "All Documents")
+        doc_badge = (
+            f'<span style="background:rgba(99,102,241,0.1);color:#4f46e5;'
+            f'padding:2px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;'
+            f'border:1px solid rgba(99,102,241,0.2);margin-left:8px;">📄 {searched_doc}</span>'
+        )
         st.markdown(
             f"""
             <div class="user-question-card">
                 <span style="font-size:1.3rem;">👤</span>
                 <div>
-                    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.8px;">You Asked (Q#{len(st.session_state.qa_history) - idx + 1})</div>
+                    <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:0.8px;">
+                        You Asked (Q#{len(st.session_state.qa_history) - idx + 1}){doc_badge}
+                    </div>
                     <div style="color:#0f172a; font-weight:600; font-size:1.08rem;">{item['question']}</div>
                 </div>
             </div>

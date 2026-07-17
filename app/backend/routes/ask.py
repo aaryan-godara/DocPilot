@@ -45,6 +45,13 @@ class AskRequest(BaseModel):
         description="Optional: restrict the search to a specific uploaded PDF.",
         examples=["report.pdf"],
     )
+    conversation_history: list[dict] | None = Field(
+        default=None,
+        description=(
+            "Optional: prior Q&A turns (newest first). Each item must have "
+            "'question' (str) and 'answer' (str) keys. Last 6 turns are used."
+        ),
+    )
 
 
 class CitationResponse(BaseModel):
@@ -103,6 +110,7 @@ async def ask_question(request: AskRequest) -> AskResponse:
         result = pipeline.ask_question(
             question=request.question,
             filename=request.filename,
+            conversation_history=request.conversation_history,
         )
     except ValueError as e:
         logger.warning("⚠️ Ask validation error: %s", str(e))

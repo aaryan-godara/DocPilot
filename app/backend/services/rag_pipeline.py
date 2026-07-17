@@ -167,6 +167,7 @@ class RAGPipeline:
         self,
         question: str,
         filename: str | None = None,
+        conversation_history: list[dict] | None = None,
     ) -> RAGResponse:
         """
         Answer a question using the RAG pipeline.
@@ -176,6 +177,8 @@ class RAGPipeline:
         Args:
             question: The user's question.
             filename: Optional — restrict search to a specific document.
+            conversation_history: Optional list of prior Q&A turns (newest first),
+                each a dict with 'question' and 'answer' keys.
 
         Returns:
             RAGResponse with answer, citations, source chunks, and metadata.
@@ -215,7 +218,11 @@ class RAGPipeline:
 
         # Step 3: Generate answer with LLM
         llm = self._get_llm()
-        llm_response: LLMResponse = llm.generate_answer(question, retrieved)
+        llm_response: LLMResponse = llm.generate_answer(
+            question,
+            retrieved,
+            conversation_history=conversation_history,
+        )
 
         # Step 4: Build source chunk previews
         source_chunks = [

@@ -28,7 +28,10 @@ RULES:
 3. Cite the page number(s) for every fact you use, formatted as [Page X].
 4. If a fact spans multiple pages, cite all of them, e.g. [Pages 3-4].
 5. Keep your answer concise but thorough.
-6. Do NOT make up information that is not in the context."""
+6. Do NOT make up information that is not in the context.
+7. The conversation history (if any) is provided for context — use it to understand follow-up questions."""
+
+MAX_HISTORY_TURNS = 6  # Max prior Q&A turns to include (each turn = 1 user + 1 assistant message)
 
 
 def _build_context_block(chunks: list[RetrievedChunk]) -> str:
@@ -117,6 +120,7 @@ class LLMClient:
         context_chunks: list[RetrievedChunk],
         temperature: float | None = None,
         max_tokens: int | None = None,
+        conversation_history: list[dict] | None = None,
     ) -> LLMResponse:
         """
         Generate an answer to a question using retrieved context chunks.
@@ -130,6 +134,8 @@ class LLMClient:
             context_chunks: Retrieved chunks with page metadata.
             temperature: Override the default temperature.
             max_tokens: Override the default max tokens.
+            conversation_history: Optional list of prior turns, each a dict
+                with 'question' and 'answer' keys. Last MAX_HISTORY_TURNS used.
 
         Returns:
             LLMResponse with the answer, citations, and usage metadata.
@@ -153,6 +159,16 @@ class LLMClient:
             f"Cite page numbers for every claim."
         )
 
+        # Build message list: system + prior history (capped) + current question
+        history = conversation_history or []
+        # History is newest-first (index 0 = most recent), so reverse for chronological order
+        prior_turns = list(reversed(history[:MAX_HISTORY_TURNS]))
+        messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
+        for turn in prior_turns:
+            messages.append({"role": "user", "content": turn["question"]})
+            messages.append({"role": "assistant", "content": turn["answer"]})
+        messages.append({"role": "user", "content": user_message})
+
         temp = temperature if temperature is not None else settings.llm_temperature
         tokens = max_tokens or settings.llm_max_tokens
 
@@ -168,10 +184,7 @@ class LLMClient:
         try:
             response = self._client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message},
-                ],
+                messages=messages,
                 temperature=temp,
                 max_tokens=tokens,
             )
