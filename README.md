@@ -38,9 +38,9 @@ Reading through long PDF documents to find specific information is time-consumin
 - [x] Vector storage and retrieval with ChromaDB
 - [x] LLM-powered answer generation with Grok (xAI)
 - [x] Citations with page numbers in responses
-- [ ] Multi-document support
-- [ ] Conversation history and follow-up questions
-- [ ] Dockerized deployment
+- [x] Multi-document support
+- [x] Conversation history and follow-up questions
+- [x] Dockerized deployment
 
 ---
 
@@ -82,7 +82,7 @@ Reading through long PDF documents to find specific information is time-consumin
                     └─────────────────┘
 ```
 
-> **Current scope (Week 3):** The full RAG pipeline is implemented — from PDF upload through to answer generation with citations. Week 4 will focus on polish and Docker deployment.
+> **Current scope (Week 4):** All features complete — full RAG pipeline, multi-document support, conversation history, and Docker deployment.
 
 ---
 
@@ -174,7 +174,7 @@ DocPilot/
 | LLM answer generation (Grok) | ✅ Complete |
 | `/ask` endpoint | ✅ Complete |
 | Q&A UI with citations | ✅ Complete |
-| Docker deployment | 🔲 Week 4 |
+| Docker deployment | ✅ Week 4 |
 
 ---
 
@@ -253,7 +253,7 @@ DocPilot/
 | **Week 1** | Project Setup | Repository, docs, FastAPI + Streamlit scaffold, upload | ✅ Done |
 | **Week 2** | PDF Processing | Text extraction, chunking, process endpoint | ✅ Done |
 | **Week 3** | RAG Pipeline | Embeddings, ChromaDB, Grok LLM, /ask endpoint, Q&A UI | ✅ Done |
-| **Week 4** | Polish & Deploy | Multi-doc, Docker deployment, final testing, demo | ⏳ Next |
+| **Week 4** | Polish & Deploy | Multi-doc, conversation history, Docker deployment | ✅ Done |
 
 ---
 

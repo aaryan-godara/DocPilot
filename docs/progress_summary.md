@@ -1,7 +1,7 @@
 # DocPilot - Complete Progress Summary
 
 > **This is a personal/supplementary log, not the official status doc.**  
-> **Last Updated:** July 8, 2026
+> **Last Updated:** July 17, 2026
 
 ---
 
@@ -308,7 +308,66 @@ chroma_persist_dir = "data/processed/chroma"
 
 ---
 
-## 🎯 Current Status: Week 3 Complete — End-to-End RAG Working ✅
+## ✅ Week 4: Polish & Deploy (COMPLETE)
+
+### **4.1 - Multi-Document Support**
+
+**What we built:**
+- [x] Document selector dropdown in the Streamlit Q&A section ("📚 All Documents" or a specific PDF)
+- [x] Selected filename (or `None` for all) is passed in the `/ask` POST body as `filename`
+- [x] Each Q&A history card shows a badge indicating which document was searched
+- [x] Backend already supported `filename` filtering via ChromaDB — this was purely a frontend + UX addition
+
+**Why this matters:** Users working with multiple PDFs can now pin their question to a specific document or search across all of them at once.
+
+---
+
+### **4.2 - Conversation History & Follow-Up Questions**
+
+**What we built:**
+- [x] `conversation_history` parameter added to `LLMClient.generate_answer()` — injects prior Q&A turns as alternating user/assistant messages
+- [x] History capped at last 6 turns to stay within LLM token limits (`MAX_HISTORY_TURNS = 6`)
+- [x] `conversation_history` flows through: `AskRequest` → `RAGPipeline.ask_question()` → `LLMClient.generate_answer()` → OpenAI messages array
+- [x] Streamlit builds `history_payload` from `st.session_state.qa_history` and passes it with every `/ask` call
+- [x] System prompt updated with Rule 7: use conversation history to understand follow-up questions
+
+**Why this matters:** Users can now ask follow-ups like *"Elaborate on point 3"* or *"What about the conclusion?"* and the LLM understands the prior context.
+
+---
+
+### **4.3 - Docker Deployment**
+
+**What we built:**
+- [x] `Dockerfile` — Python 3.11-slim backend image running `uvicorn` on port 8000
+- [x] `Dockerfile.frontend` — Python 3.11-slim frontend image running `streamlit` on port 8501
+- [x] `.dockerignore` — excludes `data/`, `.env`, `venv/`, `.git/`, notebooks from build context
+- [x] `docker-compose.yml` fully wired:
+  - `backend` service with health check (`/health` endpoint, 30s start_period)
+  - `frontend` service waits for backend via `depends_on: condition: service_healthy`
+  - `BACKEND_URL=http://backend:8000` injected via Docker internal networking
+  - `./data` mounted as a volume (ChromaDB + uploads persist across restarts)
+  - `restart: unless-stopped` on both services
+- [x] `BACKEND_URL` in `streamlit_app.py` now reads from `os.environ` (falls back to `localhost:8000` for local dev)
+
+**Usage:**
+```bash
+docker compose up --build   # First time
+docker compose up -d         # Subsequent runs (detached)
+docker compose down          # Stop
+```
+
+---
+
+### **4.4 - Week 4 What I Learned**
+
+- **Multi-doc was already 80% done** — the vector store's `filename` filter was built in Week 3. The entire Week 4 addition was a frontend selectbox and passing the field in the payload. Good architecture pays off.
+- **Conversation history in LLMs requires careful token budgeting.** Capping at 6 turns prevents the context window from overflowing on longer conversations, especially with dense document context blocks.
+- **Docker's `depends_on: condition: service_healthy` is essential** — without it, Streamlit tries to connect to FastAPI before it finishes loading the embedding model, causing cryptic errors.
+- **`.dockerignore` matters more than people think** — without it, Docker copies the entire `data/` directory (which can be gigabytes of ChromaDB vectors) into the build context, making builds extremely slow.
+- **`os.environ.get("BACKEND_URL", "http://localhost:8000")`** is the standard pattern for making a service work both locally and in Docker without code changes.
+
+---
+
 
 ### **What's Working:**
 ✅ PDF upload via Streamlit UI  
@@ -440,7 +499,9 @@ QUERY (POST /ask):
 | **Week 3** | **`POST /ask` endpoint** | ✅ Done |
 | **Week 3** | **Streamlit Q&A enabled (citations + sources)** | ✅ Done |
 | **Week 3** | **28 new tests (embedding + vector store + pipeline)** | ✅ Done |
-| **Next** | **Week 4: Polish, Docker, demo** | ⏳ Pending |
+| **Week 4** | **Multi-document support (UI selector + filename filter)** | ✅ Done |
+| **Week 4** | **Conversation history (follow-up Q&A, last 6 turns)** | ✅ Done |
+| **Week 4** | **Docker deployment (Dockerfile + Dockerfile.frontend + compose)** | ✅ Done |
 
 ---
 
@@ -481,7 +542,16 @@ QUERY (POST /ask):
 - [x] `.env.example` updated
 - [x] 28 new tests passing (50 total)
 
-**Overall: 29/29 deliverables complete (100%)**
+### Week 4 (Polish & Deploy) — 7/7 ✅
+- [x] Multi-document UI selector (document scoped or all-docs search)
+- [x] Selected document badge shown on each Q&A turn
+- [x] `conversation_history` in `LLMClient.generate_answer()` (multi-turn)
+- [x] `conversation_history` in `RAGPipeline.ask_question()` (pass-through)
+- [x] `conversation_history` in `AskRequest` + `/ask` endpoint
+- [x] Streamlit sends history payload from `qa_history` session state
+- [x] `Dockerfile` + `Dockerfile.frontend` + `.dockerignore` + wired `docker-compose.yml`
+
+**Overall: 36/36 deliverables complete (100%)**
 
 ---
 
