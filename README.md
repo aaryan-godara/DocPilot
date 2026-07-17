@@ -221,6 +221,21 @@ DocPilot/
 
 ---
 
+## 📅 Week 4 Progress
+
+- [x] Added **multi-document support** — document selector in Q&A UI (search one PDF or all at once)
+- [x] Added **conversation history** — LLM receives prior Q&A turns for follow-up question support (capped at 6 turns)
+- [x] Added `conversation_history` to `AskRequest`, `RAGPipeline`, and `LLMClient` — full pipeline support
+- [x] Shows searched-document badge on each Q&A history card
+- [x] `BACKEND_URL` now reads from `os.environ` for Docker/cloud compatibility
+- [x] Wrote `Dockerfile` (backend, Python 3.11-slim, port 8000)
+- [x] Wrote `Dockerfile.frontend` (Streamlit, Python 3.11-slim, port 8501)
+- [x] Wired `docker-compose.yml` with health check, data volume, and internal networking
+- [x] Added `.dockerignore` to keep builds fast and secure
+- [x] Total: **59 tests passing** ✅ — all existing tests still green after Week 4 changes
+
+---
+
 ## 📝 What I Learned
 
 - **Week 1:**
@@ -244,6 +259,13 @@ DocPilot/
   - **ChromaDB's upsert** saves a lot of complexity — re-processing is idempotent, no duplicate detection needed.
   - **Mocking the LLM in tests** is essential — pipeline tests shouldn't require an API key or hit a real endpoint.
 
+- **Week 4:**
+  - **Multi-doc was already 80% done** — the vector store's `filename` filter was built in Week 3. The entire Week 4 addition was a frontend selectbox and passing the field in the payload. Good architecture pays off.
+  - **Conversation history requires careful token budgeting.** Capping at 6 turns prevents the context window from overflowing on longer conversations with dense document context.
+  - **Docker's `depends_on: condition: service_healthy`** is essential — without it, Streamlit tries to connect before FastAPI finishes loading the embedding model, causing cryptic errors.
+  - **`.dockerignore` matters** — without it, Docker copies the entire `data/` directory (gigabytes of ChromaDB vectors) into the build context, making builds very slow.
+  - **`os.environ.get("BACKEND_URL", "http://localhost:8000")`** is the standard pattern for making a service work both locally and in Docker without code changes.
+
 ---
 
 ## 🚀 Upcoming Milestones
@@ -259,17 +281,18 @@ DocPilot/
 
 ## 🔮 Future Scope
 
-- 🔄 **Multi-document Q&A** — Query across multiple uploaded PDFs simultaneously
-- 💬 **Conversational Memory** — Follow-up questions with context retention
 - 📊 **Analytics Dashboard** — Track query patterns and document usage
 - 🔐 **Authentication** — User accounts and document access control
 - 🌐 **Cloud Deployment** — AWS/GCP deployment with CI/CD pipeline
 - 📱 **Responsive UI** — Mobile-friendly interface
 - 🧪 **Evaluation Framework** — Automated RAG quality metrics (faithfulness, relevance)
+- 📄 **More File Formats** — Support DOCX, TXT, and web URLs alongside PDFs
 
 ---
 
 ## 🚀 Quick Start
+
+### Local Development
 
 ```bash
 # Clone the repository
@@ -293,6 +316,23 @@ uvicorn app.backend.main:app --reload --port 8000
 
 # In a new terminal — start the frontend
 streamlit run app/frontend/streamlit_app.py --server.port 8501
+```
+
+### Docker (Recommended)
+
+```bash
+# Copy environment variables and set your xAI API key
+cp .env.example .env
+# Edit .env and set XAI_API_KEY=xai-your-actual-key
+
+# Build and start both services (one command!)
+docker compose up --build
+
+# Backend  → http://localhost:8000
+# Frontend → http://localhost:8501
+
+# Stop
+docker compose down
 ```
 
 ---
