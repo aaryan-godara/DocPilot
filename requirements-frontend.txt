@@ -1,0 +1,15 @@
+# ==================================================
+# DocPilot — Frontend-only Dependencies
+# ==================================================
+# Only packages needed by the Streamlit frontend.
+# The backend has its own full requirements.txt.
+# ==================================================
+
+# --- Frontend ---
+streamlit>=1.29.0
+
+# --- HTTP client (to talk to backend API) ---
+requests>=2.31.0
+
+# --- Configuration ---
+python-dotenv>=1.0.0

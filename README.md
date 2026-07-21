@@ -40,7 +40,6 @@ Reading through long PDF documents to find specific information is time-consumin
 - [x] Citations with page numbers in responses
 - [x] Multi-document support
 - [x] Conversation history and follow-up questions
-- [x] Dockerized deployment
 
 ---
 
@@ -82,7 +81,7 @@ Reading through long PDF documents to find specific information is time-consumin
                     └─────────────────┘
 ```
 
-> **Current scope (Week 4):** All features complete — full RAG pipeline, multi-document support, conversation history, and Docker deployment.
+> **Current scope (Week 4):** All features complete — full RAG pipeline, multi-document support, and conversation history.
 
 ---
 
@@ -98,7 +97,6 @@ Reading through long PDF documents to find specific information is time-consumin
 | **LLM Provider** | Grok (xAI) via OpenAI SDK | Answer generation |
 | **Embeddings** | Sentence Transformers | Document & query embeddings |
 | **Vector Database** | ChromaDB | Similarity search & storage |
-| **Containerization** | Docker | Deployment & reproducibility |
 | **Version Control** | Git + GitHub | Source management |
 
 ---
@@ -144,7 +142,6 @@ DocPilot/
 ├── scripts/                   # Utility scripts
 │
 ├── requirements.txt           # Python dependencies
-├── docker-compose.yml         # Container orchestration
 ├── .env.example               # Environment variable template
 ├── .gitignore
 ├── LICENSE
@@ -174,7 +171,6 @@ DocPilot/
 | LLM answer generation (Grok) | ✅ Complete |
 | `/ask` endpoint | ✅ Complete |
 | Q&A UI with citations | ✅ Complete |
-| Docker deployment | ✅ Week 4 |
 
 ---
 
@@ -228,10 +224,6 @@ DocPilot/
 - [x] Added `conversation_history` to `AskRequest`, `RAGPipeline`, and `LLMClient` — full pipeline support
 - [x] Shows searched-document badge on each Q&A history card
 - [x] `BACKEND_URL` now reads from `os.environ` for Docker/cloud compatibility
-- [x] Wrote `Dockerfile` (backend, Python 3.11-slim, port 8000)
-- [x] Wrote `Dockerfile.frontend` (Streamlit, Python 3.11-slim, port 8501)
-- [x] Wired `docker-compose.yml` with health check, data volume, and internal networking
-- [x] Added `.dockerignore` to keep builds fast and secure
 - [x] Total: **59 tests passing** ✅ — all existing tests still green after Week 4 changes
 
 ---
@@ -262,9 +254,7 @@ DocPilot/
 - **Week 4:**
   - **Multi-doc was already 80% done** — the vector store's `filename` filter was built in Week 3. The entire Week 4 addition was a frontend selectbox and passing the field in the payload. Good architecture pays off.
   - **Conversation history requires careful token budgeting.** Capping at 6 turns prevents the context window from overflowing on longer conversations with dense document context.
-  - **Docker's `depends_on: condition: service_healthy`** is essential — without it, Streamlit tries to connect before FastAPI finishes loading the embedding model, causing cryptic errors.
-  - **`.dockerignore` matters** — without it, Docker copies the entire `data/` directory (gigabytes of ChromaDB vectors) into the build context, making builds very slow.
-  - **`os.environ.get("BACKEND_URL", "http://localhost:8000")`** is the standard pattern for making a service work both locally and in Docker without code changes.
+  - **`os.environ.get("BACKEND_URL", "http://localhost:8000")`** is the standard pattern for making a service work both locally and in different environments without code changes.
 
 ---
 
@@ -275,7 +265,7 @@ DocPilot/
 | **Week 1** | Project Setup | Repository, docs, FastAPI + Streamlit scaffold, upload | ✅ Done |
 | **Week 2** | PDF Processing | Text extraction, chunking, process endpoint | ✅ Done |
 | **Week 3** | RAG Pipeline | Embeddings, ChromaDB, Grok LLM, /ask endpoint, Q&A UI | ✅ Done |
-| **Week 4** | Polish & Deploy | Multi-doc, conversation history, Docker deployment | ✅ Done |
+| **Week 4** | Polish & Enhance | Multi-doc support, conversation history | ✅ Done |
 
 ---
 
@@ -318,22 +308,6 @@ uvicorn app.backend.main:app --reload --port 8000
 streamlit run app/frontend/streamlit_app.py --server.port 8501
 ```
 
-### Docker (Recommended)
-
-```bash
-# Copy environment variables and set your xAI API key
-cp .env.example .env
-# Edit .env and set XAI_API_KEY=xai-your-actual-key
-
-# Build and start both services (one command!)
-docker compose up --build
-
-# Backend  → http://localhost:8000
-# Frontend → http://localhost:8501
-
-# Stop
-docker compose down
-```
 
 ---
 

@@ -25,7 +25,7 @@ BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 st.set_page_config(
     page_title="DocPilot — AI Document Assistant",
     page_icon="🚀",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="expanded",
 )
 
@@ -237,10 +237,85 @@ st.markdown(
         z-index: 2 !important;
     }
 
-    /* Completely remove sidebar and top header so EVERYTHING lives inside the center glass box */
-    [data-testid="stSidebar"], [data-testid="stSidebarNav"],
-    [data-testid="collapsedControl"], header[data-testid="stHeader"] {
-        display: none !important;
+    /* Make header transparent but keep sidebar toggle visible */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        pointer-events: none !important;
+    }
+
+    /* Keep ALL sidebar toggle buttons and controls clickable */
+    header[data-testid="stHeader"] button,
+    header[data-testid="stHeader"] [data-testid="stBaseButton-header"],
+    header[data-testid="stHeader"] [data-testid="stBaseButton-headerNoPadding"],
+    header[data-testid="stHeader"] [data-testid="collapsedControl"],
+    header[data-testid="stHeader"] [data-testid="stSidebarCollapsedControl"] {
+        pointer-events: auto !important;
+    }
+
+    /* Ensure collapsed sidebar control (the > arrow) is always visible and clickable */
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        z-index: 999 !important;
+        pointer-events: auto !important;
+    }
+
+    /* The collapsed control may sit outside the header in some Streamlit versions */
+    [data-testid="collapsedControl"] *,
+    [data-testid="stSidebarCollapsedControl"] * {
+        pointer-events: auto !important;
+    }
+
+    /* ── CHAT SESSION ITEMS IN SIDEBAR ──────────── */
+    .chat-session-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 6px;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        transition: var(--transition);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chat-session-item:hover {
+        background: var(--glass-bg-elevated);
+        border-color: var(--glass-border-hover);
+        color: var(--accent-secondary);
+        transform: translateX(3px);
+    }
+
+    .chat-session-item.active {
+        background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(79,70,229,0.06)) !important;
+        border-color: rgba(99,102,241,0.4) !important;
+        color: var(--accent-secondary) !important;
+        font-weight: 600 !important;
+    }
+
+    .chat-session-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--accent-gradient);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .chat-session-item.active::before,
+    .chat-session-item:hover::before {
+        opacity: 1;
     }
 
     /* ── CENTRAL GLASSMORPHISM BOX (Main Shell Container) ── */
@@ -1324,9 +1399,44 @@ if "processed_files" not in st.session_state:
     st.session_state.processed_files = []
 if "qa_history" not in st.session_state:
     st.session_state.qa_history = []
+# chat_sessions: list of dicts {id, title, history}
+if "chat_sessions" not in st.session_state:
+    st.session_state.chat_sessions = []
+if "active_session_id" not in st.session_state:
+    st.session_state.active_session_id = None
+
+def _new_session():
+    """Create a fresh chat session and make it active."""
+    import time as _time
+    sid = str(int(_time.time() * 1000))
+    st.session_state.chat_sessions.insert(0, {
+        "id": sid,
+        "title": "New Chat",
+        "history": [],
+        "created_at": _time.time(),
+    })
+    st.session_state.active_session_id = sid
+    st.session_state.qa_history = []
+
+def _get_active_session():
+    for s in st.session_state.chat_sessions:
+        if s["id"] == st.session_state.active_session_id:
+            return s
+    return None
+
+# Bootstrap: always have at least one session active
+if not st.session_state.chat_sessions:
+    _new_session()
+elif st.session_state.active_session_id is None:
+    st.session_state.active_session_id = st.session_state.chat_sessions[0]["id"]
+
+# Sync qa_history from the active session
+active_session = _get_active_session()
+if active_session is not None:
+    st.session_state.qa_history = active_session["history"]
 
 # ==================================================
-# Sidebar
+# Sidebar — ChatGPT-style session history
 # ==================================================
 with st.sidebar:
     st.markdown(
@@ -1348,16 +1458,110 @@ with st.sidebar:
 
     st.markdown("---")
 
-    st.markdown(
-        """
-        <div style="font-size: 0.85rem; color: #334155; line-height: 1.7;">
-            Upload PDF documents and ask questions.
-            Get answers with <strong style="color:#4f46e5;">citations</strong>
-            and <strong style="color:#4f46e5;">page numbers</strong>.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # ── New Chat button ───────────────────────────
+    if st.button("✏️  New Chat", use_container_width=True, key="new_chat_btn"):
+        _new_session()
+        st.rerun()
+
+    st.markdown("<div style='margin-bottom:6px;'></div>", unsafe_allow_html=True)
+
+    # ── Chat session list (ChatGPT-style with date groups) ─────────
+    import time as _time
+    from datetime import datetime, timedelta
+
+    def _date_group_label(ts: float) -> str:
+        """Return a human-friendly date group for a timestamp."""
+        now = datetime.now()
+        dt = datetime.fromtimestamp(ts)
+        diff = now.date() - dt.date()
+        if diff.days == 0:
+            return "Today"
+        elif diff.days == 1:
+            return "Yesterday"
+        elif diff.days <= 7:
+            return "Previous 7 Days"
+        else:
+            return "Older"
+
+    # Group sessions by date
+    grouped: dict[str, list] = {}
+    for session in st.session_state.chat_sessions:
+        ts = session.get("created_at", _time.time())
+        group = _date_group_label(ts)
+        grouped.setdefault(group, []).append(session)
+
+    # Render groups in order
+    group_order = ["Today", "Yesterday", "Previous 7 Days", "Older"]
+    for group_name in group_order:
+        sessions_in_group = grouped.get(group_name, [])
+        if not sessions_in_group:
+            continue
+
+        st.markdown(
+            f'<p style="font-size:0.68rem; color:#94a3b8; text-transform:uppercase; '
+            f'letter-spacing:1.2px; margin: 12px 0 6px; font-weight:700;">{group_name}</p>',
+            unsafe_allow_html=True,
+        )
+
+        for session in sessions_in_group:
+            is_active = session["id"] == st.session_state.active_session_id
+            q_count = len(session["history"])
+            label = session["title"]
+
+            # Build a preview from the last question asked
+            if session["history"]:
+                last_q = session["history"][0]["question"]
+                preview = last_q[:45] + ("…" if len(last_q) > 45 else "")
+            else:
+                preview = "No messages yet"
+
+            # Count badge
+            count_text = f"{q_count} message{'s' if q_count != 1 else ''}" if q_count > 0 else ""
+
+            # Render as an HTML card + Streamlit button for click handling
+            active_cls = "active" if is_active else ""
+            st.markdown(
+                f'<div class="chat-session-item {active_cls}" style="pointer-events:none;">'
+                f'<div style="flex:1; min-width:0;">'
+                f'<div style="font-weight:600; font-size:0.84rem; color:{"#4f46e5" if is_active else "#334155"}; '
+                f'white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">💬 {label}</div>'
+                f'<div style="font-size:0.72rem; color:#94a3b8; white-space:nowrap; overflow:hidden; '
+                f'text-overflow:ellipsis; margin-top:2px;">{preview}</div>'
+                f'</div>'
+                f'<span style="font-size:0.64rem; background:rgba(99,102,241,0.1); color:#6366f1; '
+                f'border-radius:10px; padding:2px 8px; white-space:nowrap;">{count_text}</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+            # Actual clickable buttons (compact row)
+            col_sess, col_del = st.columns([5, 1])
+            with col_sess:
+                btn_type = "primary" if is_active else "secondary"
+                if st.button(
+                    "Open" if not is_active else "● Active",
+                    key=f"session_{session['id']}",
+                    use_container_width=True,
+                    type=btn_type,
+                    disabled=is_active,
+                ):
+                    st.session_state.active_session_id = session["id"]
+                    st.session_state.qa_history = session["history"]
+                    st.rerun()
+            with col_del:
+                if st.button("🗑", key=f"del_{session['id']}", help="Delete session"):
+                    st.session_state.chat_sessions = [
+                        s for s in st.session_state.chat_sessions
+                        if s["id"] != session["id"]
+                    ]
+                    if not st.session_state.chat_sessions:
+                        _new_session()
+                    else:
+                        st.session_state.active_session_id = st.session_state.chat_sessions[0]["id"]
+                        st.session_state.qa_history = st.session_state.chat_sessions[0]["history"]
+                    st.rerun()
+
+            st.markdown('<div style="margin-bottom:4px;"></div>', unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -1464,110 +1668,161 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-uploaded_file = st.file_uploader(
-    "Choose a PDF file",
+uploaded_files = st.file_uploader(
+    "Choose PDF files",
     type=["pdf"],
-    help="Upload a PDF document to ask questions about its content.",
+    accept_multiple_files=True,
+    help="Upload one or more PDF documents to ask questions about their content.",
     label_visibility="collapsed",
 )
 
-if uploaded_file is not None:
-    # File info card
-    file_size_kb = uploaded_file.size / 1024
-    size_str = (
-        f"{file_size_kb:.1f} KB" if file_size_kb < 1024
-        else f"{file_size_kb / 1024:.1f} MB"
-    )
-    st.markdown(
-        f"""
-        <div class="file-info">
-            <div class="file-info-icon">📕</div>
-            <div>
-                <div class="file-info-name">{uploaded_file.name}</div>
-                <div class="file-info-size">{size_str}</div>
+if uploaded_files:
+    # ── Filter out invalid/errored files and deduplicate ──────────
+    valid_files = []
+    seen_names = set()
+    duplicate_names = []
+    for uf in uploaded_files:
+        # Skip files with no content (errored uploads)
+        try:
+            content = uf.getvalue()
+            if not content or len(content) == 0:
+                continue
+        except Exception:
+            continue
+        # Skip duplicates (keep first occurrence)
+        if uf.name in seen_names:
+            duplicate_names.append(uf.name)
+            continue
+        seen_names.add(uf.name)
+        valid_files.append(uf)
+
+    if duplicate_names:
+        st.warning(
+            f"⚠️ Duplicate filenames skipped: **{', '.join(set(duplicate_names))}**. "
+            "Only the first copy of each filename will be uploaded. Please rename files to have unique names."
+        )
+
+    # File info cards for valid files only
+    for uf in valid_files:
+        file_size_kb = uf.size / 1024
+        size_str = (
+            f"{file_size_kb:.1f} KB" if file_size_kb < 1024
+            else f"{file_size_kb / 1024:.1f} MB"
+        )
+        st.markdown(
+            f"""
+            <div class="file-info">
+                <div class="file-info-icon">📕</div>
+                <div>
+                    <div class="file-info-name">{uf.name}</div>
+                    <div class="file-info-size">{size_str}</div>
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
 
     # Upload & Process button
-    if st.button("⚡ Upload & Process", type="primary", use_container_width=True):
-        # Step 1: Upload
-        with st.spinner("🔄 Uploading to server..."):
-            try:
-                files = {
-                    "file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")
-                }
-                response = requests.post(
-                    f"{BACKEND_URL}/upload", files=files, timeout=30
+    if valid_files:
+        btn_label = f"⚡ Upload & Process ({len(valid_files)} file{'s' if len(valid_files) > 1 else ''})"
+        if st.button(btn_label, type="primary", use_container_width=True):
+            # ── Cache all file data IMMEDIATELY to prevent Streamlit ──
+            # ── from invalidating UploadedFile objects mid-loop      ──
+            file_data_cache = []
+            for uf in valid_files:
+                try:
+                    file_data_cache.append({
+                        "name": uf.name,
+                        "bytes": uf.getvalue(),
+                        "size": uf.size,
+                    })
+                except Exception:
+                    st.warning(f"⚠️ Could not read {uf.name}, skipping.")
+                    continue
+
+            for fdata in file_data_cache:
+                fname = fdata["name"]
+                fbytes = fdata["bytes"]
+
+                st.markdown(
+                    f'<p style="font-weight:600; color:#4f46e5; margin: 12px 0 4px;">📄 {fname}</p>',
+                    unsafe_allow_html=True,
                 )
+                # Step 1: Upload
+                with st.spinner(f"🔄 Uploading {fname}..."):
+                    try:
+                        files = {
+                            "file": (fname, fbytes, "application/pdf")
+                        }
+                        response = requests.post(
+                            f"{BACKEND_URL}/upload", files=files, timeout=30
+                        )
 
-                if response.status_code != 200:
-                    error_detail = response.json().get("detail", "Unknown error")
-                    st.error(f"❌ Upload failed: {error_detail}")
-                    st.stop()
+                        if response.status_code != 200:
+                            error_detail = response.json().get("detail", "Unknown error")
+                            st.error(f"❌ Upload failed for {fname}: {error_detail}")
+                            continue
 
-                result = response.json()
-                st.success(f"✅ Uploaded: **{result['filename']}**")
+                        result = response.json()
+                        st.success(f"✅ Uploaded: **{result['filename']}**")
 
-            except requests.ConnectionError:
-                st.error(
-                    "❌ Could not connect to the backend. "
-                    "Make sure the FastAPI server is running on port 8000."
-                )
-                st.stop()
-            except Exception as e:
-                st.error(f"❌ Upload error: {str(e)}")
-                st.stop()
+                    except requests.ConnectionError:
+                        st.error(
+                            f"❌ Could not connect to the backend while uploading {fname}. "
+                            "Make sure the FastAPI server is running on port 8000."
+                        )
+                        continue
+                    except Exception as e:
+                        st.error(f"❌ Upload error for {fname}: {str(e)}")
+                        continue
 
-        # Step 2: Process
-        with st.spinner("⚙️ Processing — parsing, chunking, embedding... This may take a moment."):
-            try:
-                proc_response = requests.post(
-                    f"{BACKEND_URL}/process/{uploaded_file.name}",
-                    timeout=120,
-                )
+                # Step 2: Process
+                with st.spinner(f"⚙️ Processing {fname} — parsing, chunking, embedding..."):
+                    try:
+                        proc_response = requests.post(
+                            f"{BACKEND_URL}/process/{fname}",
+                            timeout=120,
+                        )
 
-                if proc_response.status_code == 200:
-                    proc_data = proc_response.json()
+                        if proc_response.status_code == 200:
+                            proc_data = proc_response.json()
 
-                    st.success("✅ Document processed successfully!")
-                    st.markdown(
-                        f"""
-                        <div class="process-result">
-                            <div class="process-stat">
-                                <div class="process-stat-value">{proc_data['total_pages']}</div>
-                                <div class="process-stat-label">Pages</div>
-                            </div>
-                            <div class="process-stat">
-                                <div class="process-stat-value">{proc_data['total_chunks']}</div>
-                                <div class="process-stat-label">Chunks</div>
-                            </div>
-                            <div class="process-stat">
-                                <div class="process-stat-value">{proc_data['embeddings_stored']}</div>
-                                <div class="process-stat-label">Embeddings</div>
-                            </div>
-                            <div class="process-stat">
-                                <div class="process-stat-value">{proc_data['processing_time_seconds']:.1f}s</div>
-                                <div class="process-stat-label">Time</div>
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                            st.success(f"✅ {fname} processed successfully!")
+                            st.markdown(
+                                f"""
+                                <div class="process-result">
+                                    <div class="process-stat">
+                                        <div class="process-stat-value">{proc_data['total_pages']}</div>
+                                        <div class="process-stat-label">Pages</div>
+                                    </div>
+                                    <div class="process-stat">
+                                        <div class="process-stat-value">{proc_data['total_chunks']}</div>
+                                        <div class="process-stat-label">Chunks</div>
+                                    </div>
+                                    <div class="process-stat">
+                                        <div class="process-stat-value">{proc_data['embeddings_stored']}</div>
+                                        <div class="process-stat-label">Embeddings</div>
+                                    </div>
+                                    <div class="process-stat">
+                                        <div class="process-stat-value">{proc_data['processing_time_seconds']:.1f}s</div>
+                                        <div class="process-stat-label">Time</div>
+                                    </div>
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
 
-                    # Track processed files
-                    if uploaded_file.name not in st.session_state.processed_files:
-                        st.session_state.processed_files.append(uploaded_file.name)
-                else:
-                    error_detail = proc_response.json().get("detail", "Unknown error")
-                    st.error(f"❌ Processing failed: {error_detail}")
+                            # Track processed files
+                            if fname not in st.session_state.processed_files:
+                                st.session_state.processed_files.append(fname)
+                        else:
+                            error_detail = proc_response.json().get("detail", "Unknown error")
+                            st.error(f"❌ Processing failed for {fname}: {error_detail}")
 
-            except requests.ConnectionError:
-                st.error("❌ Lost connection to backend during processing.")
-            except Exception as e:
-                st.error(f"❌ Processing error: {str(e)}")
+                    except requests.ConnectionError:
+                        st.error(f"❌ Lost connection to backend during processing of {fname}.")
+                    except Exception as e:
+                        st.error(f"❌ Processing error for {fname}: {str(e)}")
 
 # ==================================================
 # Q&A Section
@@ -1632,7 +1887,7 @@ if question:
 
                 if ask_response.status_code == 200:
                     data = ask_response.json()
-                    st.session_state.qa_history.insert(0, {
+                    new_entry = {
                         "question": question,
                         "answer": data["answer"],
                         "citations": data.get("citations", []),
@@ -1641,7 +1896,15 @@ if question:
                         "tokens_used": data.get("tokens_used", 0),
                         "processing_time_seconds": data.get("processing_time_seconds", 0.0),
                         "searched_doc": selected_filename or "All Documents",
-                    })
+                    }
+                    st.session_state.qa_history.insert(0, new_entry)
+                    # Persist to active session
+                    active_sess = _get_active_session()
+                    if active_sess is not None:
+                        active_sess["history"] = st.session_state.qa_history
+                        # Auto-title the session with the first question (truncated)
+                        if len(active_sess["history"]) == 1:
+                            active_sess["title"] = question[:38] + ("…" if len(question) > 38 else "")
                 elif ask_response.status_code == 400:
                     error_detail = ask_response.json().get(
                         "detail", "Unknown error"
@@ -1671,6 +1934,10 @@ if st.session_state.qa_history:
     with col_clear:
         if st.button("🗑️ Clear History", use_container_width=True):
             st.session_state.qa_history = []
+            active_sess = _get_active_session()
+            if active_sess is not None:
+                active_sess["history"] = []
+                active_sess["title"] = "New Chat"
             st.rerun()
 
     for idx, item in enumerate(st.session_state.qa_history, 1):
